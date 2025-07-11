@@ -49,7 +49,7 @@
 
         </div>
      </div>
-     
+
     <script>
         
         // --- 1. Core Setup & Selectors ---
@@ -99,11 +99,20 @@
         }
 
         function drawNodes(dataset, comparingIndices = [], swappedIndices = [], sortedIndex = -1) {
-            const { width, height } = container.getBoundingClientRect();
-            // We removed the line that sets svg width/height to fix the growing box bug
+            // Get dimensions from the SVG itself to get the correct height for centering.
+            const { width, height } = svg.node().getBoundingClientRect();
+            
+            // Calculate a responsive radius first so we can use it for padding.
+            const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 40), 0);
 
-            const nodeSpacing = width / dataset.length;
-            const nodeRadius = Math.max(Math.min(nodeSpacing / 2.5, 40), 0);
+            // Create horizontal padding so nodes aren't cut off at the edges.
+            const x_start_position = nodeRadius + 10; // Start a little more than one radius in.
+            const x_end_position = width - (nodeRadius + 10); // End a little more than one radius from the edge.
+            const effectiveWidth = x_end_position - x_start_position;
+
+            // Calculate the spacing needed between the centers of the nodes within the effective width.
+            // For N items, there are N-1 gaps between them.
+            const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
 
             const nodes = svg.selectAll(".node-group").data(dataset, d => d.id);
             nodes.exit().remove();
@@ -113,24 +122,27 @@
             nodeGroups.append("text").attr("class", "node-label").attr("text-anchor", "middle").attr("dominant-baseline", "central");
 
             const allGroups = nodeGroups.merge(nodes);
-            allGroups.transition().duration(ANIMATION_SPEED_MS / 2).attr("transform", (d, i) => `translate(${i * nodeSpacing + nodeSpacing / 2}, ${height / 2})`);
+            
+            allGroups.transition().duration(ANIMATION_SPEED_MS / 2)
+                .attr("transform", (d, i) => `translate(${x_start_position + i * nodeSpacing}, ${height / 2})`);
             
             allGroups.select("circle")
-                .attr("r", nodeRadius)
+                .attr("r", nodeRadius) // Set radius on every draw
                 .attr("stroke", "#cbd5e1")
                 .attr("stroke-width", 2)
                 .transition().duration(ANIMATION_SPEED_MS / 2)
                 .attr("fill", (d, i) => {
-                    if (i > sortedIndex && sortedIndex !== -1) return "#22c55e"; // Green
-                    if (swappedIndices.includes(i)) return "#ef4444"; // Red
-                    if (comparingIndices.includes(i)) return "#eab308"; // Yellow
-                    return "#0891b2"; // Cyan
+                    if (i > sortedIndex && sortedIndex !== -1) return "#22c55e";
+                    if (swappedIndices.includes(i)) return "#ef4444";
+                    if (comparingIndices.includes(i)) return "#eab308";
+                    return "#0891b2";
                 });
             
             allGroups.select("text").text(d => d.value);
         }
 
-        // --- 4. NEW: Step Generation and Playback ---
+
+        // --- 4. Step Generation and Playback ---
         function drawStep(stepIndex) {
             if (stepIndex < 0 || stepIndex >= steps.length) return;
             const step = steps[stepIndex];
@@ -169,7 +181,7 @@
             steps.push({ data: [...localData], comparing: [], swapped: [], sortedIndex: -1 });
         }
 
-        // --- 5. NEW: UI Control Logic ---
+        // --- 5. UI Control Logic ---
         function updateButtonState() {
             playPauseBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
             startBtn.disabled = isPlaying || currentStep === 0;
