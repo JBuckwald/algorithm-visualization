@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Algorithm Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .node-label {
+            font-size: 1rem;
+            fill: white;
+            font-weight: 600;
+            pointer-events: none;
+        }
+        .control-btn {
+            transition: all 0.2s ease-in-out;
+            background-color: #4b5563; /* gray-600 */
+        }
+        .control-btn:hover:not(:disabled) {
+            background-color: #374151; /* gray-700 */
+        }
+        .control-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+        .play-btn {
+            background-color: #0891b2; /* cyan-600 */
+        }
+        .play-btn:hover:not(:disabled) {
+            background-color: #0e7490; /* cyan-700 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-6xl mx-auto flex flex-col items-center">
+        <!-- Header -->
+        <header class="text-center mb-4">
+            <h1 class="text-4xl font-bold text-white">Algorithm Visualizer</h1>
+            <p class="text-xl text-cyan-400 font-medium mt-1">Bubble Sort</p>
+        </header>
+
+        <!-- Controls -->
+        <div class="flex flex-col items-center w-full max-w-lg">
+            <div id="controls" class="flex items-center justify-center space-x-3 mb-2">
+                <button id="randomize-btn" class="btn bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">
+                    New Array
+                </button>
+                <div class="flex items-center space-x-2 bg-gray-800 p-1 rounded-lg">
+                    <button id="start-btn" class="control-btn p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></button>
+                    <button id="prev-btn" class="control-btn p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="11 19 2 12 11 4 11 19"></polygon><polygon points="22 19 13 12 22 4 22 19"></polygon></svg></button>
+                    <button id="play-pause-btn" class="control-btn play-btn p-2 rounded-md"></button>
+                    <button id="next-btn" class="control-btn p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+                    <button id="end-btn" class="control-btn p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+                </div>
+            </div>
+            <div id="status-container" class="h-6 mb-2 text-center">
+                <p id="status-text" class="text-lg text-yellow-400 font-medium"></p>
+            </div>
+        </div>
+
+        <!-- Visualization Container -->
+        <div id="visualization-container" class="w-full bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-4">
+            <svg id="chart" class="w-full h-[60vh]"></svg>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Setup ---
+        const svg = d3.select("#chart");
+        const container = document.getElementById('visualization-container');
+        
+        // --- State Management ---
+        let data = [];
+        let steps = [];
+        let currentStep = 0;
+        let isPlaying = false;
+        let playInterval = null;
+
+        // --- DOM Elements ---
+        const randomizeBtn = document.getElementById('randomize-btn');
+        const statusText = document.getElementById('status-text');
+        const startBtn = document.getElementById('start-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const endBtn = document.getElementById('end-btn');
+
+        // --- SVG Icons ---
+        const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+
+        // --- Constants ---
+        const NODE_COUNT = 10;
+        const MIN_VAL = 10;
+        const MAX_VAL = 99;
+        const ANIMATION_SPEED_MS = 300;
+
+        // --- Core Functions ---
+        function initialize() {
+            generateData();
+            bubbleSortAndGenerateSteps();
+            drawStep(currentStep);
+            updateButtonState();
+        }
+
+        function generateData() {
+            data = [];
+            for (let i = 0; i < NODE_COUNT; i++) {
+                data.push({
+                    id: i,
+                    value: Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL
+                });
+            }
+        }
+
+        function drawNodes(dataset, comparingIndices = [], swappedIndices = [], sortedIndex = -1) {
+            const { width, height } = container.getBoundingClientRect();
+            svg.attr("width", width).attr("height", height);
+
+            const nodeSpacing = width / dataset.length;
+            const nodeRadius = Math.max(Math.min(nodeSpacing / 2.5, 40), 0);
+
+            const nodes = svg.selectAll(".node-group").data(dataset, d => d.id);
+            nodes.exit().remove();
+
+            const nodeGroups = nodes.enter().append("g").attr("class", "node-group");
+            nodeGroups.append("circle");
+            nodeGroups.append("text").attr("class", "node-label").attr("text-anchor", "middle").attr("dominant-baseline", "central");
+
+            const allGroups = nodeGroups.merge(nodes);
+            allGroups.transition().duration(ANIMATION_SPEED_MS / 2).attr("transform", (d, i) => `translate(${i * nodeSpacing + nodeSpacing / 2}, ${height / 2})`);
+            
+            allGroups.select("circle")
+                .attr("r", nodeRadius)
+                .attr("stroke", "#cbd5e1")
+                .attr("stroke-width", 2)
+                .transition().duration(ANIMATION_SPEED_MS / 2)
+                .attr("fill", (d, i) => {
+                    if (i > sortedIndex && sortedIndex !== -1) return "#22c55e";
+                    if (swappedIndices.includes(i)) return "#ef4444";
+                    if (comparingIndices.includes(i)) return "#eab308";
+                    return "#0891b2";
+                });
+            
+            allGroups.select("text").text(d => d.value);
+        }
+
+        function drawStep(stepIndex) {
+            if (stepIndex < 0 || stepIndex >= steps.length) return;
+            const step = steps[stepIndex];
+            drawNodes(step.data, step.comparing, step.swapped, step.sortedIndex);
+            statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
+        }
+
+        // --- Algorithm & Step Generation ---
+        function bubbleSortAndGenerateSteps() {
+            steps = [];
+            currentStep = 0;
+            let localData = JSON.parse(JSON.stringify(data)); // Deep copy
+
+            // Initial state
+            steps.push({ data: [...localData], comparing: [], swapped: [], sortedIndex: localData.length });
+
+            let n = localD
