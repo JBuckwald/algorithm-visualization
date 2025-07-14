@@ -11,6 +11,8 @@ const prevBtn = document.getElementById("prev-btn");
 const playPauseBtn = document.getElementById('play-pause-btn');
 const nextBtn = document.getElementById("next-btn");
 const endBtn = document.getElementById("end-btn");
+const toggleCodeBtn = document.getElementById("toggle-code-btn");
+const codePanel = document.getElementById("code-panel");
 
 
 // -- State Management --
@@ -18,6 +20,7 @@ let data = [];
 let steps = [];
 let currentStep = 0;
 let isPlaying = false;
+let isCodePanelOpen = false;
 let playInterval = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
@@ -232,6 +235,20 @@ function updateButtonState() {
     endBtn.disabled = isPlaying || currentStep === steps.length - 1;
 }
 
+function toggleCodePanel() {
+    isCodePanelOpen = !isCodePanelOpen;
+
+    if (isCodePanelOpen) {
+        codePanel.classList.remove("w-0");
+        codePanel.classList.add("w-1/3"); // Make it take up 1/3 of the width
+        codePanel.classList.add("p-4"); // Add padding back
+    } else {
+        // Hide the panel
+        codePanel.classList.add("w-0");
+        codePanel.classList.remove("w-1/3");
+        codePanel.classList.remove("p-4"); // Remove padding to help it collapse
+    }
+}
 // -- Event Listeners --
 randomizeBtn.addEventListener("click", () => {
     if (isPlaying) {
@@ -244,6 +261,8 @@ prevBtn.addEventListener("click", stepBackward);
 startBtn.addEventListener("click", goToStart);
 endBtn.addEventListener("click", goToEnd);
 playPauseBtn.addEventListener("click", togglePlayPause);
+playPauseBtn.addEventListener("click", togglePlayPause);
+toggleCodeBtn.addEventListener("click", toggleCodePanel);
 
 window.addEventListener("resize", () => {
     drawStep(currentStep);
