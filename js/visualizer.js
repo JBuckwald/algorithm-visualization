@@ -13,6 +13,7 @@ const nextBtn = document.getElementById("next-btn");
 const endBtn = document.getElementById("end-btn");
 const toggleCodeBtn = document.getElementById("toggle-code-btn");
 const codePanel = document.getElementById("code-panel");
+const codeDisplay = document.getElementById("code-display");
 
 
 // -- State Management --
@@ -25,12 +26,30 @@ let playInterval = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
 
+// -- Psuedo Code for Code Box
+const bubbleSortPseudocode = [
+    "procedure bubbleSort( A : list of sortable items )",
+    "  n = length(A)",
+    "  repeat",
+    "    swapped = false",
+    "    for i = 1 to n-1 inclusive do",
+    "      if A[i-1] > A[i] then",
+    "        swap(A[i-1], A[i])",
+    "        swapped = true",
+    "      end if",
+    "    end for",
+    "    n = n - 1",
+    "  until not swapped",
+    "end procedure"
+];
+
 // -- Core Functions --
 function initialize() {
     generateData();
     bubbleSortAndGenerateSteps();
     drawStep(currentStep);
     updateButtonState();
+    renderCode(bubbleSortPseudocode);
 }
 
 function generateData() {
@@ -179,6 +198,17 @@ function drawStep(stepIndex) {
 
     drawNodes(step.data, step.comparing, step.swapped, step.airborne, step.sortedIndex);
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
+}
+
+function renderCode(code) {
+    codeDisplay.innerHTML = "";
+
+    code.forEach((line, index) => {
+        const lineElement = document.createElement("div");
+        lineElement.id = `code-line-${index}`;
+        lineElement.textContent = line;
+        codeDisplay.appendChild(lineElement);
+    });
 }
 
 // -- UI Control Logic --
