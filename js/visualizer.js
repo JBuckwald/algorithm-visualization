@@ -15,6 +15,28 @@ const toggleCodeBtn = document.getElementById("toggle-code-btn");
 const codePanel = document.getElementById("code-panel");
 const codeDisplay = document.getElementById("code-display");
 
+// --- Algorithm Registry ---
+const ALGORITHMS = {
+    "bubble-sort": {
+        name: "Bubble Sort",
+        path: "./algorithms/bubble_sort.js", // The path to the algorithm's code
+        generateSteps: null, // Will be loaded dynamically
+        code: null           // Will be loaded dynamically
+    },
+
+    "quick-sort": { // <-- ADD THIS ENTIRE OBJECT
+        name: "Quick Sort",
+        path: "./algorithms/quick_sort.js",
+        generateSteps: null,
+        code: null
+    }
+};
+
+// -- Get Algorithm from URL --
+const urlParams = new URLSearchParams(window.location.search);
+const algorithmId = urlParams.get('algorithm') || 'bubble-sort'; // Default to bubble-sort
+
+
 
 // -- State Management --
 let data = [];
@@ -27,34 +49,41 @@ let lastHighlightedLine = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
 
-// -- Psuedo Code for Code Box
-const bubbleSortPythonCode = [
-    "def bubble_sort(arr):",                                // 0
-    "    n = len(arr)",                                     // 1
-    "",                                                     // 2
-    "    for i in range(n - 1, 0, -1):",                    // 3
-    "        swapped = False",                              // 4
-    "",                                                     // 5
-    "        for j in range(i):",                           // 6
-    "            if arr[j] > arr[j+1]:",                    // 7
-    "                # Swap elements",                      // 8
-    "                arr[j], arr[j+1] = arr[j+1], arr[j]",  // 9
-    "                swapped = True",                       // 10
-    "",                                                     // 11
-    "        if not swapped:",                              // 12
-    "            break"                                     // 13
-];
-
 
 // -- Core Functions --
-function initialize() {
-    lastHighlightedLine = null;
-    generateData();
-    bubbleSortAndGenerateSteps();
-    renderCode(bubbleSortPythonCode);
-    drawStep(currentStep);
-    updateButtonState();
-    
+async function initialize() {
+    // Get algorithm details from registry
+    const algorithm = ALGORITHMS[algorithmId];
+    if (!algorithm) {
+        console.error("Invalid algorithm ID:", algorithmId);
+        statusText.textContent = "Error: Algorithm not found!";
+        return;
+    }
+
+    // Dynamically import the algorithm's module
+    try {
+        const algorithmModule = await import(algorithm.path);
+
+        // Find the exported function and code array from the loaded module
+        algorithm.generateSteps = Object.values(algorithmModule).find(fn => typeof fn === 'function');
+        algorithm.code = Object.values(algorithmModule).find(arr => Array.isArray(arr));
+
+        // --- Use the loaded data to set up the page ---
+        document.getElementById('algorithm-name').textContent = algorithm.name;
+        lastHighlightedLine = null;
+        currentStep = 0;
+        isPlaying = false; // Reset play state
+
+        generateData();
+        steps = algorithm.generateSteps(data); // USE the loaded function
+        renderCode(algorithm.code);            // USE the loaded code
+        drawStep(currentStep);
+        updateButtonState();
+
+    } catch (error) {
+        console.error("Failed to load algorithm module:", error);
+        statusText.textContent = "Error loading algorithm.";
+    }
 }
 
 function generateData() {
@@ -78,114 +107,13 @@ function renderCode(code) {
     });
 }
 
-function bubbleSortAndGenerateSteps() {
-    steps = [];
-    currentStep = 0;
-    let localData = JSON.parse(JSON.stringify(data));
-
-    // Initial state corresponds to the procedure definition
-    steps.push({
-        data: [...localData],
-        comparing: [],
-        swapped: [],
-        airborne: [],
-        sortedIndex: localData.length,
-        highlightedCodeLine: 0 
-    });
-
-    let n = localData.length;
-    let swapped;
-    let sortedBoundary = n - 1;
-
-    do {
-        swapped = false;
-        // Corresponds to the 'swapped = false' line
-        steps.push({
-            data: [...localData],
-            comparing: [],
-            swapped: [],
-            airborne: [],
-            sortedIndex: sortedBoundary + 1,
-            highlightedCodeLine: 4 
-        });
-
-        for (let i = 0; i < sortedBoundary; i++) {
-            // Corresponds to the 'if' comparison
-            steps.push({
-                data: [...localData],
-                comparing: [i, i + 1],
-                swapped: [],
-                airborne: [],
-                sortedIndex: sortedBoundary + 1,
-                highlightedCodeLine: 7 
-            });
-
-            if (localData[i].value > localData[i + 1].value) {
-                // Corresponds to the 'swap' line
-                steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [i, i + 1],
-                    airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 9 
-                });
-
-                [localData[i], localData[i + 1]] = [localData[i + 1], localData[i]];
-                swapped = true;
-
-                // Corresponds to 'swapped = true'
-                steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [i, i + 1],
-                    airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 10 
-                });
-
-                // Shows the result of the swap before the next comparison
-                steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [],
-                    airborne: [],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 6 // Back to the 'for' loop line
-                });
-            }
-        }
-
-        steps.push({
-            data: [...localData],
-            comparing: [],
-            swapped: [],
-            airborne: [],
-            sortedIndex: sortedBoundary,
-            highlightedCodeLine: 13
-        });
-        sortedBoundary--;
-
-    } while (swapped);
-
-    // Corresponds to the end of the procedure
-    steps.push({
-        data: [...localData],
-        comparing: [],
-        swapped: [],
-        airborne: [],
-        sortedIndex: -1,
-        highlightedCodeLine: 13
-    });
-}
-
-function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1) {
+function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1) {
     const { width, height } = svg.node().getBoundingClientRect();
 
     const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 40), 0);
     const xStartPosition = nodeRadius + 10;
     const xEndPosition = width - (nodeRadius + 10);
-    const effectiveWidth = xEndPosition - xStartPosition
+    const effectiveWidth = xEndPosition - xStartPosition;
     const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
 
     const nodes = svg.selectAll(".node-group").data(dataset, d => d.id);
@@ -212,7 +140,13 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
         .attr("stroke", "#cbd5e1")
         .attr("stroke-width", 2)
         .attr("fill", (d, i) => {
-            if (sortedIndex === -1 || i >= sortedIndex) {
+            if (finalized.includes(i)) {
+                return config.COLORS.sorted;
+            }
+            if (i === pivotIndex) {
+                return config.COLORS.pivot;
+            }
+            if (sortedIndex > -1 && i >= sortedIndex) {
                 return config.COLORS.sorted;
             }
             if (swapped.includes(i)) {
@@ -231,6 +165,36 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
         .attr("fill", "white")
         .style("font-size", "1rem")
         .style("font-weight", "600");
+
+    // --- Marker Drawing Logic ---
+    const markersData = [
+        { label: 'i', index: iMarker },
+        { label: 'j', index: jMarker }
+    ];
+
+    const markers = svg.selectAll(".marker-text").data(markersData, d => d.label);
+
+    const enterSelection = markers.enter()
+        .append("text")
+        .attr("class", "marker-text")
+        .attr("text-anchor", "middle")
+        .attr("font-size", "1.25rem")
+        .attr("font-weight", "bold")
+        .attr("fill", "#e2e8f0")
+        .text(d => d.label);
+
+    // Merge entering elements with updating elements
+    const allMarkers = markers.merge(enterSelection);
+
+    // Apply transitions to ALL markers (new and existing)
+    allMarkers.transition()
+        .duration(config.ANIMATION_SPEED_MS / 2)
+        .attr("opacity", d => (d.index >= 0 && d.index < dataset.length) ? 1 : 0)
+        .attr("transform", d => {
+            const xPos = xStartPosition + d.index * nodeSpacing;
+            const yPos = height / 2 - nodeRadius + 120;
+            return `translate(${xPos}, ${yPos})`;
+        });
 }
 
 function drawStep(stepIndex) {
@@ -253,7 +217,7 @@ function drawStep(stepIndex) {
     }
 
     // --- Existing Logic ---
-    drawNodes(step.data, step.comparing, step.swapped, step.airborne, step.sortedIndex);
+    drawNodes(step.data, step.comparing, step.swapped, step.airborne, step.sortedIndex, step.pivotIndex, step.finalized, step.iMarker, step.jMarker);
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
 }
 

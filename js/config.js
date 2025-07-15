@@ -8,8 +8,9 @@ export const config = {
     ANIMATION_SPEED_MS: 300,
     COLORS: {
         default: '#0891b2', // Cyan
-        comparing: '#eab308', // A shade of yellow
-        swapped: '#ef4444',   // A shade of red
-        sorted: '#22c55e',   // A shade of green 
+        comparing: '#eab308', // Yellow
+        swapped: '#ef4444',   // Red
+        sorted: '#22c55e',   // Green 
+        pivot: '#9333ea',    // Purple
     },
 };
