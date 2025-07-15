@@ -19,41 +19,38 @@
             <p id="algorithm-name" class="text-xl text-cyan-400 font-medium mt-1">Bubble Sort</p>
         </header>
 
-        <!-- Main Content Area: visualizer and code panel -->
-        <main class="flex-grow flex items-stretch overflow-hidden">
+        <div class="flex flex-col items-center w-full max-w-lg mx-auto flex-shrink-0">
+            <div id="controls" class="flex items-center justify-center space-x-3 mb-2">
+                <button id="randomize-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">
+                    New Array
+                </button>
+                <div class="flex items-center space-x-2 bg-gray-800 p-1 rounded-lg">
+                    <button id="start-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></button>
+                    <button id="prev-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 19 2 12 11 4 11 19"></polygon><polygon points="22 19 13 12 22 4 22 19"></polygon></svg></button>
+                    <button id="play-pause-btn" class="p-2 rounded-md"></button>
+                    <button id="next-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+                    <button id="end-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
+                </div>
+           
+                <button id="toggle-code-btn" class="p-2 rounded-md bg-gray-700 hover:bg-gray-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></button>
+            </div>
+            <div id="status-container" class="h-6 mb-4 text-center">
+                <p id="status-text" class="text-lg text-yellow-400 font-medium"></p>
+            </div>
+        </div>
+        
+        <main class="flex-grow flex items-center overflow-hidden gap-4">
 
-            <!-- Visualizer -->
-            <div id="visualizer-section" class="flex-grow flex flex-col items-center p-4 transition-all duration-300">
-                <div class="flex flex-col items-center w-full max-w-lg">
-                    <div id="controls" class="flex items-center justify-center space-x-3 mb-2">
-                        <button id="randomize-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">
-                            New Array
-                        </button>
-                        <div class="flex items-center space-x-2 bg-gray-800 p-1 rounded-lg">
-                            <button id="start-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg></button>
-                            <button id="prev-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 19 2 12 11 4 11 19"></polygon><polygon points="22 19 13 12 22 4 22 19"></polygon></svg></button>
-                            <button id="play-pause-btn" class="p-2 rounded-md"></button>
-                            <button id="next-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
-                            <button id="end-btn" class="p-2 rounded-md"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg></button>
-                        </div>
-                   
-                        <button id="toggle-code-btn" class="p-2 rounded-md bg-gray-700 hover:bg-gray-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></button>
-                    </div>
-                    <div id="status-container" class="h-6 mb-2 text-center">
-                        <p id="status-text" class="text-lg text-yellow-400 font-medium"></p>
-                    </div>
-                </div>
-                <div id="visualization-container" class="w-full flex-grow bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-4">
-                    <svg id="chart" class="w-full h-full"></svg>
-                </div>
+            <div id="visualization-container" class="flex-grow bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-4 h-64">
+                <svg id="chart" class="w-full h-full"></svg>
             </div>
 
-            <!-- Code Panel -->
-            <aside id="code-panel" class="w-0 bg-gray-800 border-l border-gray-700 p-4 transition-all duration-300 overflow-hidden">
-                <h3 class="text-xl font-bold text-white mb-4">Pseudocode</h3>
-                <pre><code id="code-display" class="language-js">
-                    <!-- The highlighted code will go here -->
-                </code></pre>
+            <aside id="code-panel" class="w-0 flex flex-col transition-all duration-300 overflow-hidden">
+                <div class="w-full h-full flex flex-col bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+                    <h3 class="text-xl font-bold text-white mb-4 p-4 pb-0 flex-shrink-0">Python</h3>
+                    <pre class="flex-grow p-4 pt-0 overflow-x-auto"><code id="code-display" class="language-js">
+                        </code></pre>
+                </div>
             </aside>
 
         </main>

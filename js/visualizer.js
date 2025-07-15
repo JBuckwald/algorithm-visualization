@@ -23,33 +23,38 @@ let currentStep = 0;
 let isPlaying = false;
 let isCodePanelOpen = false;
 let playInterval = null;
+let lastHighlightedLine = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
 
 // -- Psuedo Code for Code Box
-const bubbleSortPseudocode = [
-    "procedure bubbleSort( A : list of sortable items )",
-    "  n = length(A)",
-    "  repeat",
-    "    swapped = false",
-    "    for i = 1 to n-1 inclusive do",
-    "      if A[i-1] > A[i] then",
-    "        swap(A[i-1], A[i])",
-    "        swapped = true",
-    "      end if",
-    "    end for",
-    "    n = n - 1",
-    "  until not swapped",
-    "end procedure"
+const bubbleSortPythonCode = [
+    "def bubble_sort(arr):",                                // 0
+    "    n = len(arr)",                                     // 1
+    "",                                                     // 2
+    "    for i in range(n - 1, 0, -1):",                    // 3
+    "        swapped = False",                              // 4
+    "",                                                     // 5
+    "        for j in range(i):",                           // 6
+    "            if arr[j] > arr[j+1]:",                    // 7
+    "                # Swap elements",                      // 8
+    "                arr[j], arr[j+1] = arr[j+1], arr[j]",  // 9
+    "                swapped = True",                       // 10
+    "",                                                     // 11
+    "        if not swapped:",                              // 12
+    "            break"                                     // 13
 ];
+
 
 // -- Core Functions --
 function initialize() {
+    lastHighlightedLine = null;
     generateData();
     bubbleSortAndGenerateSteps();
+    renderCode(bubbleSortPythonCode);
     drawStep(currentStep);
     updateButtonState();
-    renderCode(bubbleSortPseudocode);
+    
 }
 
 function generateData() {
@@ -62,18 +67,30 @@ function generateData() {
     }
 }
 
+function renderCode(code) {
+    codeDisplay.innerHTML = "";
+    code.forEach((line, index) => {
+        const lineElement = document.createElement("div");
+        lineElement.id = `code-line-${index}`;
+        lineElement.textContent = line || ' '; // Use a space for empty lines to maintain height
+        lineElement.classList.add("whitespace-pre");
+        codeDisplay.appendChild(lineElement);
+    });
+}
+
 function bubbleSortAndGenerateSteps() {
     steps = [];
     currentStep = 0;
-
     let localData = JSON.parse(JSON.stringify(data));
 
+    // Initial state corresponds to the procedure definition
     steps.push({
         data: [...localData],
         comparing: [],
         swapped: [],
         airborne: [],
-        sortedIndex: localData.length
+        sortedIndex: localData.length,
+        highlightedCodeLine: 0 
     });
 
     let n = localData.length;
@@ -82,56 +99,83 @@ function bubbleSortAndGenerateSteps() {
 
     do {
         swapped = false;
+        // Corresponds to the 'swapped = false' line
+        steps.push({
+            data: [...localData],
+            comparing: [],
+            swapped: [],
+            airborne: [],
+            sortedIndex: sortedBoundary + 1,
+            highlightedCodeLine: 4 
+        });
 
         for (let i = 0; i < sortedBoundary; i++) {
+            // Corresponds to the 'if' comparison
             steps.push({
                 data: [...localData],
                 comparing: [i, i + 1],
                 swapped: [],
                 airborne: [],
-                sortedIndex: sortedBoundary
+                sortedIndex: sortedBoundary + 1,
+                highlightedCodeLine: 7 
             });
 
             if (localData[i].value > localData[i + 1].value) {
+                // Corresponds to the 'swap' line
                 steps.push({
                     data: [...localData],
                     comparing: [],
                     swapped: [i, i + 1],
                     airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary
+                    sortedIndex: sortedBoundary + 1,
+                    highlightedCodeLine: 9 
                 });
 
                 [localData[i], localData[i + 1]] = [localData[i + 1], localData[i]];
                 swapped = true;
 
+                // Corresponds to 'swapped = true'
                 steps.push({
                     data: [...localData],
                     comparing: [],
                     swapped: [i, i + 1],
                     airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary
+                    sortedIndex: sortedBoundary + 1,
+                    highlightedCodeLine: 10 
                 });
 
+                // Shows the result of the swap before the next comparison
                 steps.push({
                     data: [...localData],
                     comparing: [],
                     swapped: [],
                     airborne: [],
-                    sortedIndex: sortedBoundary
+                    sortedIndex: sortedBoundary + 1,
+                    highlightedCodeLine: 6 // Back to the 'for' loop line
                 });
             }
-        } 
+        }
 
-        sortedBoundary--; 
+        steps.push({
+            data: [...localData],
+            comparing: [],
+            swapped: [],
+            airborne: [],
+            sortedIndex: sortedBoundary,
+            highlightedCodeLine: 13
+        });
+        sortedBoundary--;
 
     } while (swapped);
 
+    // Corresponds to the end of the procedure
     steps.push({
         data: [...localData],
         comparing: [],
         swapped: [],
         airborne: [],
-        sortedIndex: -1
+        sortedIndex: -1,
+        highlightedCodeLine: 13
     });
 }
 
@@ -191,24 +235,26 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
 
 function drawStep(stepIndex) {
     const step = steps[stepIndex];
-
     if (!step) {
         return;
     }
 
+    // --- Highlighting Logic ---
+    // 1. Remove highlight from the previous line
+    if (lastHighlightedLine) {
+        lastHighlightedLine.classList.remove("code-highlight");
+    }
+
+    // 2. Find and highlight the new line
+    const lineToHighlight = document.getElementById(`code-line-${step.highlightedCodeLine}`);
+    if (lineToHighlight) {
+        lineToHighlight.classList.add("code-highlight");
+        lastHighlightedLine = lineToHighlight; // 3. Remember this line for the next step
+    }
+
+    // --- Existing Logic ---
     drawNodes(step.data, step.comparing, step.swapped, step.airborne, step.sortedIndex);
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
-}
-
-function renderCode(code) {
-    codeDisplay.innerHTML = "";
-
-    code.forEach((line, index) => {
-        const lineElement = document.createElement("div");
-        lineElement.id = `code-line-${index}`;
-        lineElement.textContent = line;
-        codeDisplay.appendChild(lineElement);
-    });
 }
 
 // -- UI Control Logic --
@@ -278,6 +324,9 @@ function toggleCodePanel() {
         codePanel.classList.remove("w-1/3");
         codePanel.classList.remove("p-4"); // Remove padding to help it collapse
     }
+    setTimeout(() => {
+        drawStep(currentStep);
+    }, 300);
 }
 // -- Event Listeners --
 randomizeBtn.addEventListener("click", () => {
