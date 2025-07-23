@@ -24,9 +24,16 @@ const ALGORITHMS = {
         code: null           // Will be loaded dynamically
     },
 
-    "quick-sort": { // <-- ADD THIS ENTIRE OBJECT
+    "quick-sort": {
         name: "Quick Sort",
         path: "./algorithms/quick_sort.js",
+        generateSteps: null,
+        code: null
+    },
+
+    "merge-sort": {
+        name: "Merge Sort",
+        path: "./algorithms/merge_sort.js",
         generateSteps: null,
         code: null
     }
@@ -107,7 +114,7 @@ function renderCode(code) {
     });
 }
 
-function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1) {
+function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = []) {
     const { width, height } = svg.node().getBoundingClientRect();
 
     const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 40), 0);
@@ -140,6 +147,12 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
         .attr("stroke", "#cbd5e1")
         .attr("stroke-width", 2)
         .attr("fill", (d, i) => {
+            if (mergeLeft.includes(i)) {      
+                return config.COLORS.comparing; // Use yellow for left sub-array
+            }
+            if (mergeRight.includes(i)) {     
+                return config.COLORS.pivot;     // Use purple for right sub-array
+            }
             if (finalized.includes(i)) {
                 return config.COLORS.sorted;
             }
@@ -217,7 +230,17 @@ function drawStep(stepIndex) {
     }
 
     // --- Existing Logic ---
-    drawNodes(step.data, step.comparing, step.swapped, step.airborne, step.sortedIndex, step.pivotIndex, step.finalized, step.iMarker, step.jMarker);
+    drawNodes(
+        step.data, 
+        step.comparing, 
+        step.swapped, step.airborne, 
+        step.sortedIndex, step.pivotIndex, 
+        step.finalized, 
+        step.iMarker, 
+        step.jMarker, 
+        step.mergeLeft, 
+        step.mergeRight);
+
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
 }
 
