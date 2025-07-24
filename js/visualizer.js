@@ -17,35 +17,14 @@ const codeDisplay = document.getElementById("code-display");
 
 // --- Algorithm Registry ---
 const ALGORITHMS = {
-    "bubble-sort": {
-        name: "Bubble Sort",
-        path: "./algorithms/bubble_sort.js", // The path to the algorithm's code
-        generateSteps: null, // Will be loaded dynamically
-        code: null           // Will be loaded dynamically
-    },
-
-    "quick-sort": {
-        name: "Quick Sort",
-        path: "./algorithms/quick_sort.js",
-        generateSteps: null,
-        code: null
-    },
-
-    "merge-sort": {
-        name: "Merge Sort",
-        path: "./algorithms/merge_sort.js",
-        generateSteps: null,
-        code: null
-    }
+    "bubble-sort": { name: "Bubble Sort", path: "./algorithms/bubble_sort.js" },
+    "quick-sort": { name: "Quick Sort", path: "./algorithms/quick_sort.js" },
+    "merge-sort": { name: "Merge Sort", path: "./algorithms/merge_sort.js" }
 };
 
-// -- Get Algorithm from URL --
 const urlParams = new URLSearchParams(window.location.search);
-const algorithmId = urlParams.get('algorithm') || 'bubble-sort'; // Default to bubble-sort
+const algorithmId = urlParams.get('algorithm') || 'bubble-sort';
 
-
-
-// -- State Management --
 let data = [];
 let steps = [];
 let currentStep = 0;
@@ -56,37 +35,24 @@ let lastHighlightedLine = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
 const pauseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
 
-
-// -- Core Functions --
 async function initialize() {
-    // Get algorithm details from registry
     const algorithm = ALGORITHMS[algorithmId];
-    if (!algorithm) {
-        console.error("Invalid algorithm ID:", algorithmId);
-        statusText.textContent = "Error: Algorithm not found!";
-        return;
-    }
+    if (!algorithm) return;
 
-    // Dynamically import the algorithm's module
     try {
         const algorithmModule = await import(algorithm.path);
-
-        // Find the exported function and code array from the loaded module
         algorithm.generateSteps = Object.values(algorithmModule).find(fn => typeof fn === 'function');
         algorithm.code = Object.values(algorithmModule).find(arr => Array.isArray(arr));
 
-        // --- Use the loaded data to set up the page ---
         document.getElementById('algorithm-name').textContent = algorithm.name;
         lastHighlightedLine = null;
         currentStep = 0;
-        isPlaying = false; // Reset play state
-
+        isPlaying = false;
         generateData();
-        steps = algorithm.generateSteps(data); // USE the loaded function
-        renderCode(algorithm.code);            // USE the loaded code
+        steps = algorithm.generateSteps(data);
+        renderCode(algorithm.code);
         drawStep(currentStep);
         updateButtonState();
-
     } catch (error) {
         console.error("Failed to load algorithm module:", error);
         statusText.textContent = "Error loading algorithm.";
@@ -96,10 +62,7 @@ async function initialize() {
 function generateData() {
     data = [];
     for (let i = 0; i < config.NODE_COUNT; i++) {
-        data.push({
-            id: i,
-            value: Math.floor(Math.random() * (config.MAX_VAL - config.MIN_VAL + 1)) + config.MIN_VAL
-        });
+        data.push({ id: i, value: Math.floor(Math.random() * (config.MAX_VAL - config.MIN_VAL + 1)) + config.MIN_VAL });
     }
 }
 
@@ -108,26 +71,83 @@ function renderCode(code) {
     code.forEach((line, index) => {
         const lineElement = document.createElement("div");
         lineElement.id = `code-line-${index}`;
-        lineElement.textContent = line || ' '; // Use a space for empty lines to maintain height
+        lineElement.textContent = line || ' ';
         lineElement.classList.add("whitespace-pre");
         codeDisplay.appendChild(lineElement);
     });
 }
 
-function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = []) {
-    const { width, height } = svg.node().getBoundingClientRect();
+function drawPlacingNode(placingData, dataset, recursionDepth) {
+    if (!placingData) {
+        svg.select(".placing-node-group").remove();
+        return;
+    }
 
-    const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 40), 0);
+    const { width, height } = svg.node().getBoundingClientRect();
+    const RECURSION_Y_OFFSET = 75;
+    const TOP_MARGIN = 50;
+
+    const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 30), 5);
     const xStartPosition = nodeRadius + 10;
     const xEndPosition = width - (nodeRadius + 10);
     const effectiveWidth = xEndPosition - xStartPosition;
     const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
 
-    const nodes = svg.selectAll(".node-group").data(dataset, d => d.id);
+    const startY = TOP_MARGIN + ((recursionDepth + 1) * RECURSION_Y_OFFSET);
+    const startX = xStartPosition + placingData.from * nodeSpacing;
+    const endY = TOP_MARGIN + (recursionDepth * RECURSION_Y_OFFSET);
+    const endX = xStartPosition + placingData.to * nodeSpacing;
 
-    const nodeGroups = nodes.enter()
-        .append("g")
-        .attr("class", "node-group");
+    svg.select(".placing-node-group").remove();
+    const placingNode = svg.append("g")
+        .attr("class", "placing-node-group")
+        .attr("transform", `translate(${startX}, ${startY})`);
+
+    placingNode.append("circle")
+        .attr("r", nodeRadius)
+        .attr("fill", "none")
+        .attr("stroke", config.COLORS.swapped)
+        .attr("stroke-width", 3)
+        .attr("stroke-dasharray", "4 4");
+
+    placingNode.append("text")
+        .text(placingData.value)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "white")
+        .style("font-size", "1rem").style("font-weight", "600");
+
+    placingNode.transition()
+        .duration(config.ANIMATION_SPEED_MS * 0.9)
+        .attr("transform", `translate(${endX}, ${endY})`);
+}
+
+function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = [], recursionDepth = 0, activeRange = [0, dataset.length - 1], splitLeft = [], splitRight = [], placingValue = null) {
+    const { width, height } = svg.node().getBoundingClientRect();
+    const RECURSION_Y_OFFSET = 75;
+    const TOP_MARGIN = 50;
+    const yPos = TOP_MARGIN + (recursionDepth * RECURSION_Y_OFFSET);
+
+    const [start, end] = activeRange;
+    const activeData = dataset.slice(start, end + 1);
+
+    if (activeData.length === 0) {
+        svg.selectAll(`.node-group-depth-${recursionDepth}`).remove();
+        return;
+    }
+    
+    const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 30), 5);
+    const xStartPosition = nodeRadius + 10;
+    const xEndPosition = width - (nodeRadius + 10);
+    const effectiveWidth = xEndPosition - xStartPosition;
+    const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
+
+    const nodes = svg.selectAll(`.node-group-depth-${recursionDepth}`).data(activeData, d => d.id);
+    nodes.exit().remove();
+
+    const nodeGroups = nodes.enter().append("g")
+        .attr("class", `node-group node-group-depth-${recursionDepth}`)
+        .attr("transform", (d, i) => `translate(${xStartPosition + dataset.findIndex(item => item.id === d.id) * nodeSpacing}, ${yPos})`);
 
     nodeGroups.append("circle");
     nodeGroups.append("text");
@@ -136,152 +156,97 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
 
     allGroups.transition()
         .duration(config.ANIMATION_SPEED_MS / 2)
-        .attr("transform", (d, i) => {
-            const isAirborne = airborne.includes(i);
-            const yPos = isAirborne ? height / 2 - 20 : height / 2;
-            return `translate(${xStartPosition + i * nodeSpacing}, ${yPos})`;
-        });
+        .attr("transform", (d, i) => `translate(${xStartPosition + dataset.findIndex(item => item.id === d.id) * nodeSpacing}, ${yPos})`);
+
+    allGroups.select("circle, text")
+        .attr("opacity", (d, i) => (placingValue && placingValue.to === dataset.findIndex(item => item.id === d.id)) ? 0.3 : 1);
 
     allGroups.select("circle")
         .attr("r", nodeRadius)
-        .attr("stroke", "#cbd5e1")
-        .attr("stroke-width", 2)
         .attr("fill", (d, i) => {
-            if (mergeLeft.includes(i)) {      
-                return config.COLORS.comparing; // Use yellow for left sub-array
-            }
-            if (mergeRight.includes(i)) {     
-                return config.COLORS.pivot;     // Use purple for right sub-array
-            }
-            if (finalized.includes(i)) {
-                return config.COLORS.sorted;
-            }
-            if (i === pivotIndex) {
-                return config.COLORS.pivot;
-            }
-            if (sortedIndex > -1 && i >= sortedIndex) {
-                return config.COLORS.sorted;
-            }
-            if (swapped.includes(i)) {
-                return config.COLORS.swapped;
-            }
-            if (comparing.includes(i)) {
-                return config.COLORS.comparing;
-            }
+            const originalIndex = dataset.findIndex(item => item.id === d.id);
+            if (splitLeft && splitLeft.includes(originalIndex)) return config.COLORS.comparing;
+            if (splitRight && splitRight.includes(originalIndex)) return config.COLORS.pivot;
+            if (finalized && finalized.includes(originalIndex)) return config.COLORS.sorted;
+            if (swapped && swapped.includes(originalIndex)) return config.COLORS.swapped;
             return config.COLORS.default;
-        });
+        })
+        .attr("stroke", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? config.COLORS.swapped : "#cbd5e1")
+        .attr("stroke-width", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? 4 : 2);
 
     allGroups.select("text")
         .text(d => d.value)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "white")
-        .style("font-size", "1rem")
-        .style("font-weight", "600");
-
-    // --- Marker Drawing Logic ---
-    const markersData = [
-        { label: 'i', index: iMarker },
-        { label: 'j', index: jMarker }
-    ];
-
-    const markers = svg.selectAll(".marker-text").data(markersData, d => d.label);
-
-    const enterSelection = markers.enter()
-        .append("text")
-        .attr("class", "marker-text")
-        .attr("text-anchor", "middle")
-        .attr("font-size", "1.25rem")
-        .attr("font-weight", "bold")
-        .attr("fill", "#e2e8f0")
-        .text(d => d.label);
-
-    // Merge entering elements with updating elements
-    const allMarkers = markers.merge(enterSelection);
-
-    // Apply transitions to ALL markers (new and existing)
-    allMarkers.transition()
-        .duration(config.ANIMATION_SPEED_MS / 2)
-        .attr("opacity", d => (d.index >= 0 && d.index < dataset.length) ? 1 : 0)
-        .attr("transform", d => {
-            const xPos = xStartPosition + d.index * nodeSpacing;
-            const yPos = height / 2 - nodeRadius + 120;
-            return `translate(${xPos}, ${yPos})`;
-        });
+        .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+        .attr("fill", "white").style("font-size", "1rem").style("font-weight", "600");
 }
 
 function drawStep(stepIndex) {
     const step = steps[stepIndex];
-    if (!step) {
-        return;
-    }
+    if (!step) { return; }
 
-    // --- Highlighting Logic ---
-    // 1. Remove highlight from the previous line
-    if (lastHighlightedLine) {
-        lastHighlightedLine.classList.remove("code-highlight");
-    }
+    svg.selectAll(".node-group, .placing-node-group").remove();
 
-    // 2. Find and highlight the new line
+    if (lastHighlightedLine) { lastHighlightedLine.classList.remove("code-highlight"); }
     const lineToHighlight = document.getElementById(`code-line-${step.highlightedCodeLine}`);
     if (lineToHighlight) {
         lineToHighlight.classList.add("code-highlight");
-        lastHighlightedLine = lineToHighlight; // 3. Remember this line for the next step
+        lastHighlightedLine = lineToHighlight;
     }
 
-    // --- Existing Logic ---
-    drawNodes(
-        step.data, 
-        step.comparing, 
-        step.swapped, step.airborne, 
-        step.sortedIndex, step.pivotIndex, 
-        step.finalized, 
-        step.iMarker, 
-        step.jMarker, 
-        step.mergeLeft, 
-        step.mergeRight);
+    let maxDepthToDraw = step.recursionDepth;
+    if (step.placingValue || step.mergeLeft) {
+        maxDepthToDraw = step.recursionDepth + 1;
+    }
 
+    for (let depth = 0; depth <= maxDepthToDraw; depth++) {
+        let stepForDepth = null;
+        for (let i = stepIndex; i >= 0; i--) {
+            if (steps[i].recursionDepth === depth) {
+                stepForDepth = steps[i];
+                break;
+            }
+        }
+
+        if (stepForDepth) {
+            const isCurrentStepActiveDepth = (step.recursionDepth === depth);
+            const highlights = isCurrentStepActiveDepth ? step : {};
+            let displayRange = [...stepForDepth.activeRange];
+            const finalizedNodes = stepForDepth.finalized || [];
+            if (finalizedNodes.length > 0) {
+                displayRange[0] = Math.min(displayRange[0], Math.min(...finalizedNodes));
+                displayRange[1] = Math.max(displayRange[1], Math.max(...finalizedNodes));
+            }
+
+            drawNodes(
+                stepForDepth.data, highlights.comparing, [], [], -1, -1,
+                finalizedNodes, -1, -1, highlights.mergeLeft, highlights.mergeRight,
+                stepForDepth.recursionDepth, displayRange,
+                stepForDepth.splitLeft, stepForDepth.splitRight,
+                isCurrentStepActiveDepth ? step.placingValue : null
+            );
+        }
+    }
+
+    drawPlacingNode(step.placingValue, step.data, step.recursionDepth);
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
 }
 
-// -- UI Control Logic --
 function stepForward() {
-    if (currentStep < steps.length - 1) {
-        currentStep++;
-        drawStep(currentStep);
-        updateButtonState();
-    } else if (isPlaying) {
-        togglePlayPause();
-    }
+    if (currentStep < steps.length - 1) { currentStep++; drawStep(currentStep); updateButtonState(); } 
+    else if (isPlaying) { togglePlayPause(); }
 }
 
 function stepBackward() {
-    if (currentStep > 0) {
-        currentStep--;
-        drawStep(currentStep);
-        updateButtonState();
-    }
+    if (currentStep > 0) { currentStep--; drawStep(currentStep); updateButtonState(); }
 }
 
-function goToStart() {
-    currentStep = 0;
-    drawStep(currentStep);
-    updateButtonState();
-}
-
-function goToEnd() {
-    currentStep = steps.length - 1;
-    drawStep(currentStep);
-    updateButtonState();
-}
+function goToStart() { currentStep = 0; drawStep(currentStep); updateButtonState(); }
+function goToEnd() { currentStep = steps.length - 1; drawStep(currentStep); updateButtonState(); }
 
 function togglePlayPause() {
     isPlaying = !isPlaying;
-
     if (isPlaying) {
-        if (currentStep === steps.length - 1) {
-            currentStep = 0;
-        }
+        if (currentStep === steps.length - 1) { currentStep = 0; }
         playInterval = setInterval(stepForward, config.ANIMATION_SPEED_MS);
     } else {
         clearInterval(playInterval);
@@ -293,46 +258,30 @@ function updateButtonState() {
     playPauseBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
     randomizeBtn.disabled = isPlaying;
     startBtn.disabled = isPlaying || currentStep === 0;
-    prevBtn.disabled = isPlaying || currentStep === 0;
+    prevBtn.disabled = isplaying || currentStep === 0;
     nextBtn.disabled = isPlaying || currentStep === steps.length - 1;
     endBtn.disabled = isPlaying || currentStep === steps.length - 1;
 }
 
 function toggleCodePanel() {
     isCodePanelOpen = !isCodePanelOpen;
-
     if (isCodePanelOpen) {
-        codePanel.classList.remove("w-0");
-        codePanel.classList.add("w-1/3"); // Make it take up 1/3 of the width
-        codePanel.classList.add("p-4"); // Add padding back
+        codePanel.classList.remove("w-0", "p-0");
+        codePanel.classList.add("w-1/3", "p-4");
     } else {
-        // Hide the panel
-        codePanel.classList.add("w-0");
-        codePanel.classList.remove("w-1/3");
-        codePanel.classList.remove("p-4"); // Remove padding to help it collapse
+        codePanel.classList.add("w-0", "p-0");
+        codePanel.classList.remove("w-1/3", "p-4");
     }
-    setTimeout(() => {
-        drawStep(currentStep);
-    }, 300);
+    setTimeout(() => drawStep(currentStep), 300);
 }
-// -- Event Listeners --
-randomizeBtn.addEventListener("click", () => {
-    if (isPlaying) {
-        togglePlayPause();
-    }
-    initialize();
-});
+
+randomizeBtn.addEventListener("click", () => { if (isPlaying) togglePlayPause(); initialize(); });
 nextBtn.addEventListener("click", stepForward);
 prevBtn.addEventListener("click", stepBackward);
 startBtn.addEventListener("click", goToStart);
 endBtn.addEventListener("click", goToEnd);
 playPauseBtn.addEventListener("click", togglePlayPause);
-playPauseBtn.addEventListener("click", togglePlayPause);
 toggleCodeBtn.addEventListener("click", toggleCodePanel);
+window.addEventListener("resize", () => drawStep(currentStep));
 
-window.addEventListener("resize", () => {
-    drawStep(currentStep);
-});
-
-// -- Initial Load --
 initialize();

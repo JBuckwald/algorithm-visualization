@@ -1,6 +1,6 @@
 export const config = {
     // Array based algorithm settings.
-    NODE_COUNT: 10,
+    NODE_COUNT: 8,
     MIN_VAL: 10,
     MAX_VAL: 99,
 
