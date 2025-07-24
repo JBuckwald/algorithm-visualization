@@ -114,32 +114,48 @@ export function mergeSortAndGenerateSteps(data) {
     }
 
     function mergeSortHelper(arr, l, r, depth, siblingFinalized = []) {
-        const baseStep = {
-            data: [...arr],
-            recursionDepth: depth,
-            activeRange: [l, r],
-            finalized: siblingFinalized
-        };
+    const baseStep = {
+        data: [...arr],
+        recursionDepth: depth,
+        activeRange: [l, r],
+        finalized: siblingFinalized
+    };
 
-        steps.push({ ...baseStep, highlightedCodeLine: 1 });
+    steps.push({ ...baseStep, highlightedCodeLine: 1 });
 
-        if (l >= r) {
-            steps.push({ ...baseStep, finalized: [...siblingFinalized, l] });
-            return;
-        }
+    if (l >= r) {
+        steps.push({ ...baseStep, finalized: [...siblingFinalized, l] });
+        return;
+    }
 
-        const m = l + Math.floor((r - l) / 2);
-        const leftIndices = Array.from({ length: m - l + 1 }, (_, i) => l + i);
-        const rightIndices = Array.from({ length: r - (m + 1) + 1 }, (_, i) => m + 1 + i);
-        
-        steps.push({ ...baseStep, highlightedCodeLine: 3, splitLeft: leftIndices, splitRight: rightIndices });
+    const m = l + Math.floor((r - l) / 2);
+    const leftIndices = Array.from({ length: m - l + 1 }, (_, i) => l + i);
+    const rightIndices = Array.from({ length: r - (m + 1) + 1 }, (_, i) => m + 1 + i);
+    
+    steps.push({ ...baseStep, highlightedCodeLine: 3, splitLeft: leftIndices, splitRight: rightIndices });
 
-        mergeSortHelper(arr, l, m, depth + 1, []);
-        mergeSortHelper(arr, m + 1, r, depth + 1, leftIndices);
-        
-        merge(arr, l, m, r, depth);
-        
-        steps.push({ ...baseStep, finalized: [...siblingFinalized, ...leftIndices, ...rightIndices], highlightedCodeLine: 19 });
+    // Recurse on the left half
+    mergeSortHelper(arr, l, m, depth + 1, []);
+    
+    // --- Start of New Logic ---
+    // This is our new "snapshot" step!
+    // It captures the result of the left-side sort before we move to the right.
+    const finalizedLeftData = arr.slice(l, m + 1);
+    steps.push({
+        ...baseStep, // Use the parent's data as a base
+        highlightedCodeLine: 7, // Highlight the call to sort the right half
+        // Store a copy of the sorted left nodes and their original position.
+        snapshot: { data: finalizedLeftData, range: [l, m], depth: depth + 1 }
+    });
+    // --- End of New Logic ---
+
+    // Recurse on the right half, passing the now-finalized left indices
+    mergeSortHelper(arr, m + 1, r, depth + 1, leftIndices);
+    
+    // Merge the two halves
+    merge(arr, l, m, r, depth);
+    
+    steps.push({ ...baseStep, finalized: [...siblingFinalized, ...leftIndices, ...rightIndices], highlightedCodeLine: 19 });
     }
 
     steps.push({ data: [...localData], highlightedCodeLine: 0, recursionDepth: 0, activeRange: [0, localData.length - 1] });

@@ -122,6 +122,44 @@ function drawPlacingNode(placingData, dataset, recursionDepth) {
         .attr("transform", `translate(${endX}, ${endY})`);
 }
 
+function drawSnapshotNodes(snapshot) {
+    if (!snapshot) return;
+
+    const { data, range, depth } = snapshot;
+    const { width, height } = svg.node().getBoundingClientRect();
+    const RECURSION_Y_OFFSET = 75;
+    const TOP_MARGIN = 50;
+    const yPos = TOP_MARGIN + (depth * RECURSION_Y_OFFSET);
+    
+    const nodeRadius = Math.max(Math.min(width / config.NODE_COUNT / 3, 30), 5);
+    const xStartPosition = nodeRadius + 10;
+    const xEndPosition = width - (nodeRadius + 10);
+    const effectiveWidth = xEndPosition - xStartPosition;
+    const nodeSpacing = config.NODE_COUNT > 1 ? effectiveWidth / (config.NODE_COUNT - 1) : 0;
+
+    // Use a unique class to prevent interference with other nodes
+    const snapshotGroups = svg.selectAll(".snapshot-node-group")
+        .data(data, d => d.id)
+        .enter()
+        .append("g")
+        .attr("class", "snapshot-node-group")
+        .attr("transform", (d, i) => `translate(${xStartPosition + (range[0] + i) * nodeSpacing}, ${yPos})`);
+
+    snapshotGroups.append("circle")
+        .attr("r", nodeRadius)
+        .attr("fill", config.COLORS.sorted) // Always color these as "sorted"
+        .attr("stroke", "#cbd5e1")
+        .attr("stroke-width", 2);
+
+    snapshotGroups.append("text")
+        .text(d => d.value)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "white")
+        .style("font-size", "1rem")
+        .style("font-weight", "600");
+}
+
 function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = [], recursionDepth = 0, activeRange = [0, dataset.length - 1], splitLeft = [], splitRight = [], placingValue = null) {
     const { width, height } = svg.node().getBoundingClientRect();
     const RECURSION_Y_OFFSET = 75;
@@ -184,7 +222,7 @@ function drawStep(stepIndex) {
     const step = steps[stepIndex];
     if (!step) { return; }
 
-    svg.selectAll(".node-group, .placing-node-group").remove();
+    svg.selectAll(".node-group, .placing-node-group, .snapshot-node-group").remove();
 
     if (lastHighlightedLine) { lastHighlightedLine.classList.remove("code-highlight"); }
     const lineToHighlight = document.getElementById(`code-line-${step.highlightedCodeLine}`);
@@ -193,6 +231,32 @@ function drawStep(stepIndex) {
         lastHighlightedLine = lineToHighlight;
     }
 
+    // --- Start of Corrected Logic ---
+    const activeSnapshots = {}; 
+    for (let i = 0; i <= stepIndex; i++) {
+        const historicalStep = steps[i];
+        
+        if (historicalStep.snapshot) {
+            const snapshot = historicalStep.snapshot;
+            activeSnapshots[snapshot.range.join('-')] = snapshot;
+        }
+
+        // THIS IS THE FIX: Only clear snapshots at the very start of the merge phase.
+        // Line 12 corresponds to "while i < len(L) and j < len(R):", which is the
+        // perfect, unambiguous signal that a merge is beginning.
+        if (historicalStep.highlightedCodeLine === 12) {
+            const leftChildRange = [Math.min(...historicalStep.mergeLeft), Math.max(...historicalStep.mergeLeft)];
+            const rightChildRange = [Math.min(...historicalStep.mergeRight), Math.max(...historicalStep.mergeRight)];
+            
+            delete activeSnapshots[leftChildRange.join('-')];
+            delete activeSnapshots[rightChildRange.join('-')];
+        }
+    }
+
+    Object.values(activeSnapshots).forEach(s => drawSnapshotNodes(s));
+    // --- End of Corrected Logic ---
+
+    // The rest of the function remains the same.
     let maxDepthToDraw = step.recursionDepth;
     if (step.placingValue || step.mergeLeft) {
         maxDepthToDraw = step.recursionDepth + 1;
