@@ -270,7 +270,13 @@ function drawStep(stepIndex) {
             const isCoveredBySnapshot = Object.values(activeSnapshots).some(snap => 
                 start >= snap.range[0] && end <= snap.range[1]
             );
-            if (isCoveredBySnapshot) {
+
+            // If the current step's active depth is the one that CREATED the snapshot,
+            // we might still need to draw the placing animation.
+            const isPlacingOnThisLevel = step.placingValue && step.recursionDepth === depth;
+
+            if (isCoveredBySnapshot && !isPlacingOnThisLevel) {
+                svg.selectAll(`.node-group-depth-${depth}`).remove(); // Explicitly remove them
                 continue; // If it's covered, don't draw the live nodes.
             }
             // --- End of Corrected Logic ---

@@ -49,7 +49,7 @@ export function mergeSortAndGenerateSteps(data) {
     for (let i = 0; i < n1; i++) L[i] = arr[l + i];
     for (let j = 0; j < n2; j++) R[j] = arr[m + 1 + j];
 
-    // This step sets up the merge view with the original, unsorted data.
+    // This step sets up the merge view, showing the state BEFORE this merge begins.
     steps.push({
         data: [...unsortedData],
         mergeLeft: leftIndices,
@@ -60,13 +60,12 @@ export function mergeSortAndGenerateSteps(data) {
     });
 
     let i = 0, j = 0, k = l;
+    // Create a copy of the array that we will modify to show the merge progress.
+    let currentVisualState = [...unsortedData];
 
-    // --- Start of Corrected Logic ---
-    // The main merge loop now consistently uses `unsortedData` for the visual background,
-    // while the real `arr` is modified behind the scenes.
     while (i < n1 && j < n2) {
         steps.push({
-            data: [...unsortedData], // Use unsortedData
+            data: [...currentVisualState],
             comparing: [leftIndices[i], rightIndices[j]],
             highlightedCodeLine: 13, recursionDepth: depth, activeRange: [l, r],
             mergeLeft: leftIndices, mergeRight: rightIndices,
@@ -74,49 +73,51 @@ export function mergeSortAndGenerateSteps(data) {
 
         if (L[i].value <= R[j].value) {
             steps.push({
-                data: [...unsortedData], // Use unsortedData
+                data: [...currentVisualState],
                 placingValue: { value: L[i].value, from: leftIndices[i], to: k },
                 highlightedCodeLine: 14, recursionDepth: depth, activeRange: [l, r],
                 mergeLeft: leftIndices, mergeRight: rightIndices,
             });
             arr[k] = L[i];
+            currentVisualState[k] = L[i]; // Update our visual copy
             i++;
         } else {
             steps.push({
-                data: [...unsortedData], // Use unsortedData
+                data: [...currentVisualState],
                 placingValue: { value: R[j].value, from: rightIndices[j], to: k },
                 highlightedCodeLine: 17, recursionDepth: depth, activeRange: [l, r],
                 mergeLeft: leftIndices, mergeRight: rightIndices,
             });
             arr[k] = R[j];
+            currentVisualState[k] = R[j]; // Update our visual copy
             j++;
         }
         k++;
     }
 
-    // The leftover loops also need to use the `unsortedData`.
     while (i < n1) {
         steps.push({
-            data: [...unsortedData], // Use unsortedData
+            data: [...currentVisualState],
             placingValue: { value: L[i].value, from: leftIndices[i], to: k },
             highlightedCodeLine: 23, recursionDepth: depth, activeRange: [l, r],
             mergeLeft: leftIndices,
         });
         arr[k] = L[i];
+        currentVisualState[k] = L[i]; // Update our visual copy
         i++; k++;
     }
 
     while (j < n2) {
         steps.push({
-            data: [...unsortedData], // Use unsortedData
+            data: [...currentVisualState],
             placingValue: { value: R[j].value, from: rightIndices[j], to: k },
             highlightedCodeLine: 28, recursionDepth: depth, activeRange: [l, r],
             mergeRight: rightIndices,
         });
         arr[k] = R[j];
+        currentVisualState[k] = R[j]; // Update our visual copy
         j++; k++;
     }
-    // --- End of Corrected Logic ---
     }
 
     function mergeSortHelper(arr, l, r, depth, siblingFinalized = []) {
