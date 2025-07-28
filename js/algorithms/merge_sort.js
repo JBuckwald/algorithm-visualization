@@ -38,79 +38,85 @@ export function mergeSortAndGenerateSteps(data) {
     const steps = [];
     let localData = JSON.parse(JSON.stringify(data));
 
-    function merge(arr, l, m, r, depth) {
-        const n1 = m - l + 1;
-        const n2 = r - m;
-        const L = new Array(n1);
-        const R = new Array(n2);
-        const leftIndices = Array.from({ length: n1 }, (_, i) => l + i);
-        const rightIndices = Array.from({ length: n2 }, (_, i) => m + 1 + i);
+    function merge(arr, l, m, r, depth, unsortedData) {
+    const n1 = m - l + 1;
+    const n2 = r - m;
+    const L = new Array(n1);
+    const R = new Array(n2);
+    const leftIndices = Array.from({ length: n1 }, (_, i) => l + i);
+    const rightIndices = Array.from({ length: n2 }, (_, i) => m + 1 + i);
 
-        for (let i = 0; i < n1; i++) L[i] = arr[l + i];
-        for (let j = 0; j < n2; j++) R[j] = arr[m + 1 + j];
+    for (let i = 0; i < n1; i++) L[i] = arr[l + i];
+    for (let j = 0; j < n2; j++) R[j] = arr[m + 1 + j];
 
+    // This step sets up the merge view with the original, unsorted data.
+    steps.push({
+        data: [...unsortedData],
+        mergeLeft: leftIndices,
+        mergeRight: rightIndices,
+        highlightedCodeLine: 12,
+        recursionDepth: depth,
+        activeRange: [l, r]
+    });
+
+    let i = 0, j = 0, k = l;
+
+    // --- Start of Corrected Logic ---
+    // The main merge loop now consistently uses `unsortedData` for the visual background,
+    // while the real `arr` is modified behind the scenes.
+    while (i < n1 && j < n2) {
         steps.push({
-            data: [...arr],
-            mergeLeft: leftIndices,
-            mergeRight: rightIndices,
-            highlightedCodeLine: 12,
-            recursionDepth: depth,
-            activeRange: [l, r]
+            data: [...unsortedData], // Use unsortedData
+            comparing: [leftIndices[i], rightIndices[j]],
+            highlightedCodeLine: 13, recursionDepth: depth, activeRange: [l, r],
+            mergeLeft: leftIndices, mergeRight: rightIndices,
         });
 
-        let i = 0, j = 0, k = l;
-
-        while (i < n1 && j < n2) {
+        if (L[i].value <= R[j].value) {
             steps.push({
-                data: [...arr],
-                comparing: [leftIndices[i], rightIndices[j]],
-                highlightedCodeLine: 13, recursionDepth: depth, activeRange: [l, r],
+                data: [...unsortedData], // Use unsortedData
+                placingValue: { value: L[i].value, from: leftIndices[i], to: k },
+                highlightedCodeLine: 14, recursionDepth: depth, activeRange: [l, r],
                 mergeLeft: leftIndices, mergeRight: rightIndices,
             });
-
-            if (L[i].value <= R[j].value) {
-                steps.push({
-                    data: [...arr],
-                    placingValue: { value: L[i].value, from: leftIndices[i], to: k },
-                    highlightedCodeLine: 14, recursionDepth: depth, activeRange: [l, r],
-                    mergeLeft: leftIndices, mergeRight: rightIndices,
-                });
-                arr[k] = L[i];
-                i++;
-            } else {
-                steps.push({
-                    data: [...arr],
-                    placingValue: { value: R[j].value, from: rightIndices[j], to: k },
-                    highlightedCodeLine: 17, recursionDepth: depth, activeRange: [l, r],
-                    mergeLeft: leftIndices, mergeRight: rightIndices,
-                });
-                arr[k] = R[j];
-                j++;
-            }
-            k++;
-        }
-
-        while (i < n1) {
-            steps.push({
-                data: [...arr],
-                placingValue: { value: L[i].value, from: leftIndices[i], to: k },
-                highlightedCodeLine: 23, recursionDepth: depth, activeRange: [l, r],
-                mergeLeft: leftIndices,
-            });
             arr[k] = L[i];
-            i++; k++;
-        }
-
-        while (j < n2) {
+            i++;
+        } else {
             steps.push({
-                data: [...arr],
+                data: [...unsortedData], // Use unsortedData
                 placingValue: { value: R[j].value, from: rightIndices[j], to: k },
-                highlightedCodeLine: 28, recursionDepth: depth, activeRange: [l, r],
-                mergeRight: rightIndices,
+                highlightedCodeLine: 17, recursionDepth: depth, activeRange: [l, r],
+                mergeLeft: leftIndices, mergeRight: rightIndices,
             });
             arr[k] = R[j];
-            j++; k++;
+            j++;
         }
+        k++;
+    }
+
+    // The leftover loops also need to use the `unsortedData`.
+    while (i < n1) {
+        steps.push({
+            data: [...unsortedData], // Use unsortedData
+            placingValue: { value: L[i].value, from: leftIndices[i], to: k },
+            highlightedCodeLine: 23, recursionDepth: depth, activeRange: [l, r],
+            mergeLeft: leftIndices,
+        });
+        arr[k] = L[i];
+        i++; k++;
+    }
+
+    while (j < n2) {
+        steps.push({
+            data: [...unsortedData], // Use unsortedData
+            placingValue: { value: R[j].value, from: rightIndices[j], to: k },
+            highlightedCodeLine: 28, recursionDepth: depth, activeRange: [l, r],
+            mergeRight: rightIndices,
+        });
+        arr[k] = R[j];
+        j++; k++;
+    }
+    // --- End of Corrected Logic ---
     }
 
     function mergeSortHelper(arr, l, r, depth, siblingFinalized = []) {
@@ -133,29 +139,30 @@ export function mergeSortAndGenerateSteps(data) {
     const rightIndices = Array.from({ length: r - (m + 1) + 1 }, (_, i) => m + 1 + i);
     
     steps.push({ ...baseStep, highlightedCodeLine: 3, splitLeft: leftIndices, splitRight: rightIndices });
+    
+    const unsortedStateStep = steps[steps.length - 1]; // --- Capture unsorted state here ---
+    
+    steps.push({ ...baseStep, highlightedCodeLine: 6, splitLeft: leftIndices, splitRight: rightIndices });
 
-    // Recurse on the left half
     mergeSortHelper(arr, l, m, depth + 1, []);
     
-    // --- Start of New Logic ---
-    // This is our new "snapshot" step!
-    // It captures the result of the left-side sort before we move to the right.
     const finalizedLeftData = arr.slice(l, m + 1);
     steps.push({
-        ...baseStep, // Use the parent's data as a base
-        highlightedCodeLine: 7, // Highlight the call to sort the right half
-        // Store a copy of the sorted left nodes and their original position.
+        ...baseStep,
+        highlightedCodeLine: 7,
         snapshot: { data: finalizedLeftData, range: [l, m], depth: depth + 1 }
     });
-    // --- End of New Logic ---
 
-    // Recurse on the right half, passing the now-finalized left indices
     mergeSortHelper(arr, m + 1, r, depth + 1, leftIndices);
     
-    // Merge the two halves
-    merge(arr, l, m, r, depth);
+    const finalizedRightData = arr.slice(m + 1, r + 1);
+     steps.push({
+        ...baseStep,
+        highlightedCodeLine: 9,
+        snapshot: { data: finalizedRightData, range: [m + 1, r], depth: depth + 1 }
+    });
     
-    steps.push({ ...baseStep, finalized: [...siblingFinalized, ...leftIndices, ...rightIndices], highlightedCodeLine: 19 });
+    merge(arr, l, m, r, depth, unsortedStateStep.data); // --- Pass unsorted state here ---
     }
 
     steps.push({ data: [...localData], highlightedCodeLine: 0, recursionDepth: 0, activeRange: [0, localData.length - 1] });

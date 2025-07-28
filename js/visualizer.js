@@ -61,8 +61,9 @@ async function initialize() {
 
 function generateData() {
     data = [];
-    for (let i = 0; i < config.NODE_COUNT; i++) {
-        data.push({ id: i, value: Math.floor(Math.random() * (config.MAX_VAL - config.MIN_VAL + 1)) + config.MIN_VAL });
+
+    for (let i = 0; i < config.DATA.length; i++) {
+        data.push({ id: i, value: config.DATA[i] });
     }
 }
 
@@ -196,8 +197,8 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
         .duration(config.ANIMATION_SPEED_MS / 2)
         .attr("transform", (d, i) => `translate(${xStartPosition + dataset.findIndex(item => item.id === d.id) * nodeSpacing}, ${yPos})`);
 
-    allGroups.select("circle, text")
-        .attr("opacity", (d, i) => (placingValue && placingValue.to === dataset.findIndex(item => item.id === d.id)) ? 0.3 : 1);
+    allGroups.selectAll("circle, text")
+        .attr("opacity", (d, i) => (placingValue && placingValue.to === dataset.findIndex(item => item.id === d.id)) ? 0 : 1);
 
     allGroups.select("circle")
         .attr("r", nodeRadius)
@@ -231,32 +232,23 @@ function drawStep(stepIndex) {
         lastHighlightedLine = lineToHighlight;
     }
 
-    // --- Start of Corrected Logic ---
-    const activeSnapshots = {}; 
+    const activeSnapshots = {};
     for (let i = 0; i <= stepIndex; i++) {
         const historicalStep = steps[i];
-        
         if (historicalStep.snapshot) {
-            const snapshot = historicalStep.snapshot;
-            activeSnapshots[snapshot.range.join('-')] = snapshot;
-        }
-
-        // THIS IS THE FIX: Only clear snapshots at the very start of the merge phase.
-        // Line 12 corresponds to "while i < len(L) and j < len(R):", which is the
-        // perfect, unambiguous signal that a merge is beginning.
-        if (historicalStep.highlightedCodeLine === 12) {
-            const leftChildRange = [Math.min(...historicalStep.mergeLeft), Math.max(...historicalStep.mergeLeft)];
-            const rightChildRange = [Math.min(...historicalStep.mergeRight), Math.max(...historicalStep.mergeRight)];
-            
-            delete activeSnapshots[leftChildRange.join('-')];
-            delete activeSnapshots[rightChildRange.join('-')];
+            const newSnapshot = historicalStep.snapshot;
+            for (const key in activeSnapshots) {
+                const existingSnap = activeSnapshots[key];
+                if (existingSnap.range[0] >= newSnapshot.range[0] && existingSnap.range[1] <= newSnapshot.range[1]) {
+                    delete activeSnapshots[key];
+                }
+            }
+            activeSnapshots[newSnapshot.range.join('-')] = newSnapshot;
         }
     }
 
     Object.values(activeSnapshots).forEach(s => drawSnapshotNodes(s));
-    // --- End of Corrected Logic ---
 
-    // The rest of the function remains the same.
     let maxDepthToDraw = step.recursionDepth;
     if (step.placingValue || step.mergeLeft) {
         maxDepthToDraw = step.recursionDepth + 1;
@@ -272,6 +264,17 @@ function drawStep(stepIndex) {
         }
 
         if (stepForDepth) {
+            // --- Start of Corrected Logic ---
+            // Check if the range for these live nodes is already contained within any snapshot.
+            const [start, end] = stepForDepth.activeRange;
+            const isCoveredBySnapshot = Object.values(activeSnapshots).some(snap => 
+                start >= snap.range[0] && end <= snap.range[1]
+            );
+            if (isCoveredBySnapshot) {
+                continue; // If it's covered, don't draw the live nodes.
+            }
+            // --- End of Corrected Logic ---
+
             const isCurrentStepActiveDepth = (step.recursionDepth === depth);
             const highlights = isCurrentStepActiveDepth ? step : {};
             let displayRange = [...stepForDepth.activeRange];
@@ -322,7 +325,7 @@ function updateButtonState() {
     playPauseBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
     randomizeBtn.disabled = isPlaying;
     startBtn.disabled = isPlaying || currentStep === 0;
-    prevBtn.disabled = isplaying || currentStep === 0;
+    prevBtn.disabled = isPlaying || currentStep === 0;
     nextBtn.disabled = isPlaying || currentStep === steps.length - 1;
     endBtn.disabled = isPlaying || currentStep === steps.length - 1;
 }

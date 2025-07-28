@@ -3,6 +3,7 @@ export const config = {
     NODE_COUNT: 8,
     MIN_VAL: 10,
     MAX_VAL: 99,
+    DATA: [51, 13, 84, 30, 98, 41, 73, 21],
 
     // Animation and color settings.
     ANIMATION_SPEED_MS: 300,
