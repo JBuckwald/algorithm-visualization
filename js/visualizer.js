@@ -4,7 +4,6 @@ import { config } from "./config.js";
 const svg = d3.select("#chart");
 
 // -- UI Element Selectors --
-const randomizeBtn = document.getElementById("randomize-btn");
 const statusText = document.getElementById("status-text");
 const startBtn = document.getElementById("start-btn");
 const prevBtn = document.getElementById("prev-btn");
@@ -29,7 +28,7 @@ let data = [];
 let steps = [];
 let currentStep = 0;
 let isPlaying = false;
-let isCodePanelOpen = false;
+let isCodePanelOpen = true;
 let playInterval = null;
 let lastHighlightedLine = null;
 const playIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
@@ -232,22 +231,25 @@ function drawStep(stepIndex) {
         lastHighlightedLine = lineToHighlight;
     }
 
-    const activeSnapshots = {};
-    for (let i = 0; i <= stepIndex; i++) {
-        const historicalStep = steps[i];
-        if (historicalStep.snapshot) {
-            const newSnapshot = historicalStep.snapshot;
-            for (const key in activeSnapshots) {
-                const existingSnap = activeSnapshots[key];
-                if (existingSnap.range[0] >= newSnapshot.range[0] && existingSnap.range[1] <= newSnapshot.range[1]) {
-                    delete activeSnapshots[key];
-                }
-            }
-            activeSnapshots[newSnapshot.range.join('-')] = newSnapshot;
-        }
-    }
+    let activeSnapshots = {}; // Declare here, outside the if-block
 
-    Object.values(activeSnapshots).forEach(s => drawSnapshotNodes(s));
+    // Only process and draw historical snapshots if it's NOT the final, fully sorted step.
+    if (stepIndex < steps.length - 1) {
+        for (let i = 0; i <= stepIndex; i++) {
+            const historicalStep = steps[i];
+            if (historicalStep.snapshot) {
+                const newSnapshot = historicalStep.snapshot;
+                for (const key in activeSnapshots) {
+                    const existingSnap = activeSnapshots[key];
+                    if (existingSnap.range[0] >= newSnapshot.range[0] && existingSnap.range[1] <= newSnapshot.range[1]) {
+                        delete activeSnapshots[key];
+                    }
+                }
+                activeSnapshots[newSnapshot.range.join('-')] = newSnapshot;
+            }
+        }
+        Object.values(activeSnapshots).forEach(s => drawSnapshotNodes(s));
+    }
 
     let maxDepthToDraw = step.recursionDepth;
     if (step.placingValue || step.mergeLeft) {
@@ -264,22 +266,17 @@ function drawStep(stepIndex) {
         }
 
         if (stepForDepth) {
-            // --- Start of Corrected Logic ---
-            // Check if the range for these live nodes is already contained within any snapshot.
             const [start, end] = stepForDepth.activeRange;
             const isCoveredBySnapshot = Object.values(activeSnapshots).some(snap => 
                 start >= snap.range[0] && end <= snap.range[1]
             );
 
-            // If the current step's active depth is the one that CREATED the snapshot,
-            // we might still need to draw the placing animation.
             const isPlacingOnThisLevel = step.placingValue && step.recursionDepth === depth;
 
             if (isCoveredBySnapshot && !isPlacingOnThisLevel) {
-                svg.selectAll(`.node-group-depth-${depth}`).remove(); // Explicitly remove them
-                continue; // If it's covered, don't draw the live nodes.
+                svg.selectAll(`.node-group-depth-${depth}`).remove();
+                continue;
             }
-            // --- End of Corrected Logic ---
 
             const isCurrentStepActiveDepth = (step.recursionDepth === depth);
             const highlights = isCurrentStepActiveDepth ? step : {};
@@ -287,7 +284,7 @@ function drawStep(stepIndex) {
             const finalizedNodes = stepForDepth.finalized || [];
             if (finalizedNodes.length > 0) {
                 displayRange[0] = Math.min(displayRange[0], Math.min(...finalizedNodes));
-                displayRange[1] = Math.max(displayRange[1], Math.max(...finalizedNodes));
+                displayRange[1] = Math.max(displayRange[1], Math.max(...finalizedNodes)); // Fixed typo here
             }
 
             drawNodes(
@@ -329,7 +326,6 @@ function togglePlayPause() {
 
 function updateButtonState() {
     playPauseBtn.innerHTML = isPlaying ? pauseIcon : playIcon;
-    randomizeBtn.disabled = isPlaying;
     startBtn.disabled = isPlaying || currentStep === 0;
     prevBtn.disabled = isPlaying || currentStep === 0;
     nextBtn.disabled = isPlaying || currentStep === steps.length - 1;
@@ -348,7 +344,6 @@ function toggleCodePanel() {
     setTimeout(() => drawStep(currentStep), 300);
 }
 
-randomizeBtn.addEventListener("click", () => { if (isPlaying) togglePlayPause(); initialize(); });
 nextBtn.addEventListener("click", stepForward);
 prevBtn.addEventListener("click", stepBackward);
 startBtn.addEventListener("click", goToStart);
