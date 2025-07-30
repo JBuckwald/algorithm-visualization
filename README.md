@@ -26,7 +26,7 @@ Each algorithm visualization is paired with a simple Python pseudocode implement
 
 ---
 
-## Technologies Stack
+## Technology Stack
 
 This project was built using modern web technologies:
 
