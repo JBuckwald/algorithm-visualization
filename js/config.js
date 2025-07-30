@@ -6,7 +6,7 @@ export const config = {
     DATA: [51, 13, 84, 30, 98, 41, 73, 21],
 
     // Animation and color settings.
-    ANIMATION_SPEED_MS: 200,
+    ANIMATION_SPEED_MS: 500,
     COLORS: {
         default: '#0891b2', // Cyan
         comparing: '#eab308', // Yellow
