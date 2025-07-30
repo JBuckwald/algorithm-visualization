@@ -4,7 +4,7 @@ An interactive web-based tool designed to visualize classic sorting algorithms. 
 
 ### [**Live Demo &rarr;**](https://jbuckwald.github.io/algorithm-visualization/)
 
-![Algorithm Visualizer Screenshot](https://i.imgur.com/v8nN8yG.png)
+![Algorithm Visualizer Screenshot](assets/bubblesort.gif)
 
 ---
 
