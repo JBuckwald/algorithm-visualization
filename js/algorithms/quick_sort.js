@@ -1,5 +1,4 @@
-
-// -- Pseudo Code for Code Box --
+// --- Pseudo Code for Code Box ---
 export const quickSortPythonCode = [
     "def quick_sort(arr, low, high):",                // 0
     "    if low < high:",                             // 1
@@ -15,84 +14,89 @@ export const quickSortPythonCode = [
     "    i = low - 1",                                // 11
     "",                                              // 12
     "    for j in range(low, high):",                 // 13
-    "        if arr[j] < pivot:",                     // 14
-    "            i += 1",                             // 15
-    "            arr[i], arr[j] = arr[j], arr[i]",    // 16
+    "    if arr[j] < pivot:",                     // 14
+    "        i += 1",                             // 15
+    "        arr[i], arr[j] = arr[j], arr[i]",    // 16
     "",                                              // 17
     "    arr[i+1], arr[high] = arr[high], arr[i+1]",    // 18
     "    return i + 1",                              // 19
 ];
 
+
 export function quickSortAndGenerateSteps(data) {
     const steps = [];
-    const finalized = [];
     let localData = JSON.parse(JSON.stringify(data));
+    let finalized = []; // A single, growing list of finalized indices
 
-    function partition(arr, low, high) {
-        const pivotValue = arr[high].value;
-        let pivotIndex = high;
+    function createStep(arr, line, depth, low, high, highlights = {}) {
         steps.push({
-            data: [...arr], comparing: [], swapped: [], airborne: [], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 10, iMarker: -1, jMarker: -1
+            data: [...arr],
+            highlightedCodeLine: line,
+            recursionDepth: depth,
+            activeRange: [low, high],
+            finalized: [...finalized], // Add the current list of finalized pivots
+            ...highlights
         });
+    }
+
+    function partition(arr, low, high, depth) {
+        const pivotValue = arr[high]; // The actual pivot object
+        let pivotIndex = high;
+        createStep(arr, 10, depth, low, high, { pivotIndex });
 
         let i = low - 1;
-        steps.push({
-            data: [...arr], comparing: [], swapped: [], airborne: [], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 11, iMarker: i, jMarker: -1
-        });
+        createStep(arr, 11, depth, low, high, { pivotIndex, iMarker: i });
 
         for (let j = low; j < high; j++) {
-            steps.push({
-                data: [...arr], comparing: [j, pivotIndex], swapped: [], airborne: [], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 14, iMarker: i, jMarker: j
-            });
-
-            if (arr[j].value < pivotValue) {
+            createStep(arr, 14, depth, low, high, { pivotIndex, iMarker: i, jMarker: j, comparing: [j, pivotIndex] });
+            if (arr[j].value < pivotValue.value) {
                 i++;
-                steps.push({
-                    data: [...arr], comparing: [j, pivotIndex], swapped: [i, j], airborne: [i, j], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 16, iMarker: i, jMarker: j
-                });
-
+                createStep(arr, 16, depth, low, high, { pivotIndex, iMarker: i, jMarker: j, swapped: [i, j] });
                 [arr[i], arr[j]] = [arr[j], arr[i]];
-
-                steps.push({
-                    data: [...arr], comparing: [], swapped: [i, j], airborne: [], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 16, iMarker: i, jMarker: j
-                });
+                createStep(arr, 16, depth, low, high, { pivotIndex, iMarker: i, jMarker: j, swapped: [i, j] });
             }
         }
 
         const finalPivotIndex = i + 1;
-        steps.push({
-            data: [...arr], comparing: [], swapped: [finalPivotIndex, high], airborne: [finalPivotIndex, high], pivotIndex: pivotIndex, finalized: [...finalized], highlightedCodeLine: 18, iMarker: i, jMarker: high
-        });
-
+        createStep(arr, 18, depth, low, high, { iMarker: i, swapped: [finalPivotIndex, high] });
         [arr[finalPivotIndex], arr[high]] = [arr[high], arr[finalPivotIndex]];
-        pivotIndex = finalPivotIndex;
-        finalized.push(pivotIndex);
+        finalized.push(finalPivotIndex); // Add the newly placed pivot to our master list
+        createStep(arr, 18, depth, low, high, { swapped: [finalPivotIndex, high] });
 
-        steps.push({
-            data: [...arr], comparing: [], swapped: [], airborne: [], pivotIndex: -1, finalized: [...finalized], highlightedCodeLine: 19, iMarker: i, jMarker: -1
-        });
-        
-        return pivotIndex;
+        createStep(arr, 19, depth, low, high);
+        return finalPivotIndex;
     }
 
-    function quickSortHelper(arr, low, high) {
-        if (low < high) {
-            const pi = partition(arr, low, high);
-            quickSortHelper(arr, low, pi - 1);
-            quickSortHelper(arr, pi + 1, high);
+    function quickSortHelper(arr, low, high, depth) {
+        if (low > high) return; // Base case for empty ranges
+
+        createStep(arr, 1, depth, low, high);
+
+        if (low === high) { // Base case for a single-element array
+            if (!finalized.includes(low)) finalized.push(low);
+            createStep(arr, 1, depth, low, high); // Show it finalized
+            return;
         }
+
+        const pi = partition(arr, low, high, depth);
+
+        createStep(arr, 6, depth, low, high, { pivotIndex: pi });
+        quickSortHelper(arr, low, pi - 1, depth + 1);
+
+        createStep(arr, 7, depth, low, high, { pivotIndex: pi });
+        quickSortHelper(arr, pi + 1, high, depth + 1);
     }
 
-    // Add initial state with markers off-screen
-    steps.unshift({
-        data: [...localData], comparing: [], swapped: [], airborne: [], pivotIndex: -1, finalized: [], highlightedCodeLine: 0, iMarker: -1, jMarker: -1,
-    });
-    
-    quickSortHelper(localData, 0, localData.length - 1);
+    // Initial call
+    quickSortHelper(localData, 0, localData.length - 1, 0);
 
-    // Add final sorted state
+    // Final, fully sorted step
     steps.push({
-        data: [...localData], comparing: [], swapped: [], airborne: [], pivotIndex: -1, finalized: [...Array(localData.length).keys()], highlightedCodeLine: -1, iMarker: -1, jMarker: -1
+        data: [...localData],
+        highlightedCodeLine: -1,
+        recursionDepth: 0,
+        activeRange: [0, localData.length - 1],
+        finalized: [...Array(localData.length).keys()]
     });
 
     return steps;

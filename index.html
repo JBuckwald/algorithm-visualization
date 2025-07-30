@@ -8,32 +8,43 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="./css/main.css">
 </head>
-<body class="bg-gray-900 text-gray-100">
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen">
 
-    <div class="container mx-auto p-8">
-        <h1 class="text-4xl font-bold text-center text-white mb-4">
-            Algorithm Visualizer
-        </h1>
-        <p class="text-lg text-cyan-400 text-center mb-12">
-            Visualize classic algorithms and data structures
-        </p>
+    <div class="container mx-auto p-8 max-w-4xl">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-extrabold text-white mb-3">
+                Algorithm Visualizer
+            </h1>
+            <p class="text-lg text-cyan-400">
+                An interactive tool to visualize classic sorting algorithms.
+            </p>
+        </header>
 
-        <!-- The list of algorithms will go here -->
-        <div id="algorithm-list">
-            <h2 class="text-2xl font-semibold text-white border-b border-gray-700 pb-2 mb-4">
-                Sorting Algorithms
-            </h2>
-            <a href="./visualizer.html?algorithm=bubble-sort" class="block text-xl text-white hover:text-cyan-400 mb-2">
-                Bubble Sort
-            </a>
-            <a href="./visualizer.html?algorithm=quick-sort" class="block text-xl text-white hover:text-cyan-400 mb-2">
-                Quick Sort
-            </a>
-            <a href="./visualizer.html?algorithm=merge-sort" class="block text-xl text-white hover:text-cyan-400 mb-2">
-                Merge Sort
-            </a>
-        </div>
-    </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 
-</body>
+            <a href="./visualizer.html?algorithm=bubble-sort" class="algorithm-card">
+                <div class="p-6">
+                    <h3 class="text-2xl font-bold text-white mb-2">Bubble Sort</h3>
+                    <p class="text-gray-400 mb-4">A simple sorting algorithm that repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order.</p>
+                    <span class="text-cyan-400 font-semibold hover:underline">Visualize &rarr;</span>
+                </div>
+            </a>
+
+            <a href="./visualizer.html?algorithm=quick-sort" class="algorithm-card">
+                <div class="p-6">
+                    <h3 class="text-2xl font-bold text-white mb-2">Quick Sort</h3>
+                    <p class="text-gray-400 mb-4">An efficient, recursive algorithm that uses a "divide and conquer" strategy by partitioning the array around a pivot element.</p>
+                    <span class="text-cyan-400 font-semibold hover:underline">Visualize &rarr;</span>
+                </div>
+            </a>
+
+            <a href="./visualizer.html?algorithm=merge-sort" class="algorithm-card">
+                <div class="p-6">
+                    <h3 class="text-2xl font-bold text-white mb-2">Merge Sort</h3>
+                    <p class="text-gray-400 mb-4">A stable, recursive algorithm that divides the array into halves, sorts them, and then merges them back together.</p>
+                    <span class="text-cyan-400 font-semibold hover:underline">Visualize &rarr;</span>
+                </div>
+            </a>
+
+        </div> </div> </body>
 </html>

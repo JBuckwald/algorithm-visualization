@@ -20,14 +20,10 @@ export function bubbleSortAndGenerateSteps(data) {
     const steps = [];
     let localData = JSON.parse(JSON.stringify(data));
 
-    // Initial state corresponds to the procedure definition
+    // Initial state
     steps.push({
-        data: [...localData],
-        comparing: [],
-        swapped: [],
-        airborne: [],
-        sortedIndex: localData.length,
-        highlightedCodeLine: 0 
+        data: [...localData], comparing: [], swapped: [],
+        sortedIndex: localData.length, highlightedCodeLine: 0
     });
 
     let n = localData.length;
@@ -36,83 +32,50 @@ export function bubbleSortAndGenerateSteps(data) {
 
     do {
         swapped = false;
-        // Corresponds to the 'swapped = false' line
         steps.push({
-            data: [...localData],
-            comparing: [],
-            swapped: [],
-            airborne: [],
-            sortedIndex: sortedBoundary + 1,
-            highlightedCodeLine: 4 
+            data: [...localData], comparing: [], swapped: [],
+            sortedIndex: sortedBoundary + 1, highlightedCodeLine: 4
         });
 
         for (let i = 0; i < sortedBoundary; i++) {
-            // Corresponds to the 'if' comparison
+            // Step 1: Highlight nodes for comparison
             steps.push({
-                data: [...localData],
-                comparing: [i, i + 1],
-                swapped: [],
-                airborne: [],
-                sortedIndex: sortedBoundary + 1,
-                highlightedCodeLine: 7 
+                data: [...localData], comparing: [i, i + 1], swapped: [],
+                sortedIndex: sortedBoundary + 1, highlightedCodeLine: 7
             });
 
             if (localData[i].value > localData[i + 1].value) {
-                // Corresponds to the 'swap' line
+                // Step 2: Mark nodes as 'swapped' (e.g., turn red)
+                // The data itself has NOT been swapped yet in this step.
                 steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [i, i + 1],
-                    airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 9 
+                    data: [...localData], comparing: [], swapped: [i, i + 1],
+                    sortedIndex: sortedBoundary + 1, highlightedCodeLine: 9
                 });
 
+                // Actually swap the data in our local array
                 [localData[i], localData[i + 1]] = [localData[i + 1], localData[i]];
                 swapped = true;
 
-                // Corresponds to 'swapped = true'
+                // Step 3: Show the result of the swap.
+                // The visualizer will see the data is in a new order and animate the nodes to their new positions.
                 steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [i, i + 1],
-                    airborne: [i, i + 1],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 10 
-                });
-
-                // Shows the result of the swap before the next comparison
-                steps.push({
-                    data: [...localData],
-                    comparing: [],
-                    swapped: [],
-                    airborne: [],
-                    sortedIndex: sortedBoundary + 1,
-                    highlightedCodeLine: 6 // Back to the 'for' loop line
+                    data: [...localData], comparing: [], swapped: [],
+                    sortedIndex: sortedBoundary + 1, highlightedCodeLine: 6
                 });
             }
         }
-
         steps.push({
-            data: [...localData],
-            comparing: [],
-            swapped: [],
-            airborne: [],
-            sortedIndex: sortedBoundary,
-            highlightedCodeLine: 13
+            data: [...localData], comparing: [], swapped: [],
+            sortedIndex: sortedBoundary, highlightedCodeLine: 13
         });
         sortedBoundary--;
 
     } while (swapped);
 
-    // Corresponds to the end of the procedure
+    // Final sorted state
     steps.push({
-        data: [...localData],
-        comparing: [],
-        swapped: [],
-        airborne: [],
-        sortedIndex: -1,
-        highlightedCodeLine: 13
+        data: [...localData], comparing: [], swapped: [],
+        sortedIndex: -1, highlightedCodeLine: 13
     });
 
     return steps;

@@ -77,90 +77,10 @@ function renderCode(code) {
     });
 }
 
-function drawPlacingNode(placingData, dataset, recursionDepth) {
-    if (!placingData) {
-        svg.select(".placing-node-group").remove();
-        return;
-    }
 
-    const { width, height } = svg.node().getBoundingClientRect();
-    const RECURSION_Y_OFFSET = 75;
-    const TOP_MARGIN = 50;
+// -- Merge Sort Drawing Functions --
 
-    const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 30), 5);
-    const xStartPosition = nodeRadius + 10;
-    const xEndPosition = width - (nodeRadius + 10);
-    const effectiveWidth = xEndPosition - xStartPosition;
-    const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
-
-    const startY = TOP_MARGIN + ((recursionDepth + 1) * RECURSION_Y_OFFSET);
-    const startX = xStartPosition + placingData.from * nodeSpacing;
-    const endY = TOP_MARGIN + (recursionDepth * RECURSION_Y_OFFSET);
-    const endX = xStartPosition + placingData.to * nodeSpacing;
-
-    svg.select(".placing-node-group").remove();
-    const placingNode = svg.append("g")
-        .attr("class", "placing-node-group")
-        .attr("transform", `translate(${startX}, ${startY})`);
-
-    placingNode.append("circle")
-        .attr("r", nodeRadius)
-        .attr("fill", "none")
-        .attr("stroke", config.COLORS.swapped)
-        .attr("stroke-width", 3)
-        .attr("stroke-dasharray", "4 4");
-
-    placingNode.append("text")
-        .text(placingData.value)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "white")
-        .style("font-size", "1rem").style("font-weight", "600");
-
-    placingNode.transition()
-        .duration(config.ANIMATION_SPEED_MS * 0.9)
-        .attr("transform", `translate(${endX}, ${endY})`);
-}
-
-function drawSnapshotNodes(snapshot) {
-    if (!snapshot) return;
-
-    const { data, range, depth } = snapshot;
-    const { width, height } = svg.node().getBoundingClientRect();
-    const RECURSION_Y_OFFSET = 75;
-    const TOP_MARGIN = 50;
-    const yPos = TOP_MARGIN + (depth * RECURSION_Y_OFFSET);
-    
-    const nodeRadius = Math.max(Math.min(width / config.NODE_COUNT / 3, 30), 5);
-    const xStartPosition = nodeRadius + 10;
-    const xEndPosition = width - (nodeRadius + 10);
-    const effectiveWidth = xEndPosition - xStartPosition;
-    const nodeSpacing = config.NODE_COUNT > 1 ? effectiveWidth / (config.NODE_COUNT - 1) : 0;
-
-    // Use a unique class to prevent interference with other nodes
-    const snapshotGroups = svg.selectAll(".snapshot-node-group")
-        .data(data, d => d.id)
-        .enter()
-        .append("g")
-        .attr("class", "snapshot-node-group")
-        .attr("transform", (d, i) => `translate(${xStartPosition + (range[0] + i) * nodeSpacing}, ${yPos})`);
-
-    snapshotGroups.append("circle")
-        .attr("r", nodeRadius)
-        .attr("fill", config.COLORS.sorted) // Always color these as "sorted"
-        .attr("stroke", "#cbd5e1")
-        .attr("stroke-width", 2);
-
-    snapshotGroups.append("text")
-        .text(d => d.value)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "white")
-        .style("font-size", "1rem")
-        .style("font-weight", "600");
-}
-
-function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = [], recursionDepth = 0, activeRange = [0, dataset.length - 1], splitLeft = [], splitRight = [], placingValue = null) {
+function drawMergeSortNodes(dataset, comparing = [], swapped = [], airborne = [], sortedIndex = -1, pivotIndex = -1, finalized = [], iMarker = -1, jMarker = -1, mergeLeft = [], mergeRight = [], recursionDepth = 0, activeRange = [0, dataset.length - 1], splitLeft = [], splitRight = [], placingValue = null) {
     const { width, height } = svg.node().getBoundingClientRect();
     const RECURSION_Y_OFFSET = 75;
     const TOP_MARGIN = 50;
@@ -209,8 +129,8 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
             if (swapped && swapped.includes(originalIndex)) return config.COLORS.swapped;
             return config.COLORS.default;
         })
-        .attr("stroke", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? config.COLORS.swapped : "#cbd5e1")
-        .attr("stroke-width", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? 4 : 2);
+        .attr("stroke", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? config.COLORS.swapped : "#ffffff")
+        .attr("stroke-width", (d, i) => (comparing && comparing.includes(dataset.findIndex(item => item.id === d.id))) ? 4 : 2); 
 
     allGroups.select("text")
         .text(d => d.value)
@@ -218,25 +138,97 @@ function drawNodes(dataset, comparing = [], swapped = [], airborne = [], sortedI
         .attr("fill", "white").style("font-size", "1rem").style("font-weight", "600");
 }
 
-function drawStep(stepIndex) {
-    const step = steps[stepIndex];
-    if (!step) { return; }
-
-    svg.selectAll(".node-group, .placing-node-group, .snapshot-node-group").remove();
-
-    if (lastHighlightedLine) { lastHighlightedLine.classList.remove("code-highlight"); }
-    const lineToHighlight = document.getElementById(`code-line-${step.highlightedCodeLine}`);
-    if (lineToHighlight) {
-        lineToHighlight.classList.add("code-highlight");
-        lastHighlightedLine = lineToHighlight;
+function drawMergeSortPlacingNode(placingData, dataset, recursionDepth) {
+    if (!placingData) {
+        svg.select(".placing-node-group").remove();
+        return;
     }
 
-    let activeSnapshots = {}; // Declare here, outside the if-block
+    const { width, height } = svg.node().getBoundingClientRect();
+    const RECURSION_Y_OFFSET = 75;
+    const TOP_MARGIN = 50;
 
-    // Only process and draw historical snapshots if it's NOT the final, fully sorted step.
-    if (stepIndex < steps.length - 1) {
+    const nodeRadius = Math.max(Math.min(width / dataset.length / 3, 30), 5);
+    const xStartPosition = nodeRadius + 10;
+    const xEndPosition = width - (nodeRadius + 10);
+    const effectiveWidth = xEndPosition - xStartPosition;
+    const nodeSpacing = dataset.length > 1 ? effectiveWidth / (dataset.length - 1) : 0;
+
+    const startY = TOP_MARGIN + ((recursionDepth + 1) * RECURSION_Y_OFFSET);
+    const startX = xStartPosition + placingData.from * nodeSpacing;
+    const endY = TOP_MARGIN + (recursionDepth * RECURSION_Y_OFFSET);
+    const endX = xStartPosition + placingData.to * nodeSpacing;
+
+    svg.select(".placing-node-group").remove();
+    const placingNode = svg.append("g")
+        .attr("class", "placing-node-group")
+        .attr("transform", `translate(${startX}, ${startY})`);
+
+    placingNode.append("circle")
+        .attr("r", nodeRadius)
+        .attr("fill", "none")
+        .attr("stroke", config.COLORS.swapped)
+        .attr("stroke-width", 3)
+        .attr("stroke-dasharray", "4 4");
+
+    placingNode.append("text")
+        .text(placingData.value)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "white")
+        .style("font-size", "1rem").style("font-weight", "600");
+
+    placingNode.transition()
+        .duration(config.ANIMATION_SPEED_MS * 0.9)
+        .attr("transform", `translate(${endX}, ${endY})`);
+}
+
+function drawMergeSortSnapshotNodes(snapshot) {
+    if (!snapshot) return;
+
+    const { data, range, depth } = snapshot;
+    const { width, height } = svg.node().getBoundingClientRect();
+    const RECURSION_Y_OFFSET = 75;
+    const TOP_MARGIN = 50;
+    const yPos = TOP_MARGIN + (depth * RECURSION_Y_OFFSET);
+    
+    const nodeRadius = Math.max(Math.min(width / config.NODE_COUNT / 3, 30), 5);
+    const xStartPosition = nodeRadius + 10;
+    const xEndPosition = width - (nodeRadius + 10);
+    const effectiveWidth = xEndPosition - xStartPosition;
+    const nodeSpacing = config.NODE_COUNT > 1 ? effectiveWidth / (config.NODE_COUNT - 1) : 0;
+
+    // Use a unique class to prevent interference with other nodes
+    const snapshotGroups = svg.selectAll(".snapshot-node-group")
+        .data(data, d => d.id)
+        .enter()
+        .append("g")
+        .attr("class", "snapshot-node-group")
+        .attr("transform", (d, i) => `translate(${xStartPosition + (range[0] + i) * nodeSpacing}, ${yPos})`);
+
+    snapshotGroups.append("circle")
+        .attr("r", nodeRadius)
+        .attr("fill", config.COLORS.sorted) // Always color these as "sorted"
+        .attr("stroke", "#ffffff")      
+        .attr("stroke-width", 2);
+
+    snapshotGroups.append("text")
+        .text(d => d.value)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "white")
+        .style("font-size", "1rem")
+        .style("font-weight", "600");
+}
+
+function drawMergeSortStep(step, stepIndex, allSteps) {
+    // --- This logic is moved from your original drawStep function ---
+    svg.selectAll(".node-group, .placing-node-group, .snapshot-node-group").remove();
+
+    let activeSnapshots = {};
+    if (stepIndex < allSteps.length - 1) {
         for (let i = 0; i <= stepIndex; i++) {
-            const historicalStep = steps[i];
+            const historicalStep = allSteps[i];
             if (historicalStep.snapshot) {
                 const newSnapshot = historicalStep.snapshot;
                 for (const key in activeSnapshots) {
@@ -248,7 +240,7 @@ function drawStep(stepIndex) {
                 activeSnapshots[newSnapshot.range.join('-')] = newSnapshot;
             }
         }
-        Object.values(activeSnapshots).forEach(s => drawSnapshotNodes(s));
+        Object.values(activeSnapshots).forEach(s => drawMergeSortSnapshotNodes(s));
     }
 
     let maxDepthToDraw = step.recursionDepth;
@@ -259,18 +251,17 @@ function drawStep(stepIndex) {
     for (let depth = 0; depth <= maxDepthToDraw; depth++) {
         let stepForDepth = null;
         for (let i = stepIndex; i >= 0; i--) {
-            if (steps[i].recursionDepth === depth) {
-                stepForDepth = steps[i];
+            if (allSteps[i].recursionDepth === depth) {
+                stepForDepth = allSteps[i];
                 break;
             }
         }
 
         if (stepForDepth) {
             const [start, end] = stepForDepth.activeRange;
-            const isCoveredBySnapshot = Object.values(activeSnapshots).some(snap => 
+            const isCoveredBySnapshot = Object.values(activeSnapshots).some(snap =>
                 start >= snap.range[0] && end <= snap.range[1]
             );
-
             const isPlacingOnThisLevel = step.placingValue && step.recursionDepth === depth;
 
             if (isCoveredBySnapshot && !isPlacingOnThisLevel) {
@@ -284,10 +275,10 @@ function drawStep(stepIndex) {
             const finalizedNodes = stepForDepth.finalized || [];
             if (finalizedNodes.length > 0) {
                 displayRange[0] = Math.min(displayRange[0], Math.min(...finalizedNodes));
-                displayRange[1] = Math.max(displayRange[1], Math.max(...finalizedNodes)); // Fixed typo here
+                displayRange[1] = Math.max(displayRange[1], Math.max(...finalizedNodes));
             }
 
-            drawNodes(
+            drawMergeSortNodes(
                 stepForDepth.data, highlights.comparing, [], [], -1, -1,
                 finalizedNodes, -1, -1, highlights.mergeLeft, highlights.mergeRight,
                 stepForDepth.recursionDepth, displayRange,
@@ -296,8 +287,194 @@ function drawStep(stepIndex) {
             );
         }
     }
+    drawMergeSortPlacingNode(step.placingValue, step.data, step.recursionDepth);
+}
 
-    drawPlacingNode(step.placingValue, step.data, step.recursionDepth);
+
+//  -- Bubble Sort Drawing Functions --
+
+// In js/visualizer.js
+
+function drawBubbleSortStep(step) {
+    const { data, comparing, swapped, sortedIndex } = step;
+    const { width } = svg.node().getBoundingClientRect();
+    const nodeRadius = Math.max(Math.min(width / data.length / 3, 30), 5);
+    const xStartPosition = nodeRadius + 10;
+    const xEndPosition = width - (nodeRadius + 10);
+    const effectiveWidth = xEndPosition - xStartPosition;
+    const nodeSpacing = data.length > 1 ? effectiveWidth / (data.length - 1) : 0;
+    const yPos = 100;
+
+    // 1. DATA BINDING: Use the key function d => d.id to track nodes across steps.
+    const nodes = svg.selectAll(".node-group").data(data, d => d.id);
+
+    // 2. EXIT: Remove nodes that are no longer present in the data.
+    nodes.exit().remove();
+
+    // 3. ENTER: Create new <g> elements for new data points.
+    const nodeGroups = nodes.enter().append("g")
+        .attr("class", "node-group")
+        // CRITICAL: Set the initial position of new nodes so they don't fly in.
+        .attr("transform", (d, i) => `translate(${xStartPosition + i * nodeSpacing}, ${yPos})`);
+
+    // Add visuals to the new groups.
+    nodeGroups.append("circle");
+    nodeGroups.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle");
+
+    // 4. MERGE: Combine entering nodes and existing nodes into one selection.
+    const allGroups = nodeGroups.merge(nodes);
+
+    // 5. TRANSITION: Animate all nodes to their new positions.
+    allGroups.transition()
+        .duration(config.ANIMATION_SPEED_MS / 2)
+        .attr("transform", (d, i) => `translate(${xStartPosition + i * nodeSpacing}, ${yPos})`);
+
+    // 6. STYLING: Update styles for all nodes in the selection.
+    allGroups.select("circle")
+        .attr("r", nodeRadius)
+        .attr("fill", (d, i) => {
+            if (i >= sortedIndex) return config.COLORS.sorted;
+            if (swapped.includes(i)) return config.COLORS.swapped;
+            if (comparing.includes(i)) return config.COLORS.comparing;
+            return config.COLORS.default;
+        })
+        .attr("stroke", "#ffffff")
+        .attr("stroke-width", 2);
+
+    allGroups.select("text")
+        .text(d => d.value)
+        .attr("fill", "white")
+        .style("font-size", "1rem")
+        .style("font-weight", "600");
+}
+
+
+// -- Quick Sort Drawing Functions --
+
+
+function drawQuickSortStep(step) {
+    svg.selectAll("*").remove();
+
+    let activeSnapshots = {};
+    for (let i = 0; i <= steps.indexOf(step); i++) {
+        const historicalStep = steps[i];
+        if (historicalStep.snapshot) {
+            const newSnapshot = historicalStep.snapshot;
+            for (const key in activeSnapshots) {
+                const existingSnap = activeSnapshots[key];
+                if (existingSnap.range[0] >= newSnapshot.range[0] && existingSnap.range[1] <= newSnapshot.range[1]) {
+                    delete activeSnapshots[key];
+                }
+            }
+            activeSnapshots[newSnapshot.range.join('-')] = newSnapshot;
+        }
+    }
+    Object.values(activeSnapshots).forEach(s => drawQuickSortSnapshotNodes(s));
+
+    const recursionDepth = step.recursionDepth;
+    for (let depth = 0; depth <= recursionDepth; depth++) {
+        let stepForDepth = null;
+        for (let i = steps.indexOf(step); i >= 0; i--) {
+            if (steps[i].recursionDepth === depth) {
+                stepForDepth = steps[i];
+                break;
+            }
+        }
+
+        if (stepForDepth) {
+            const { data, activeRange, pivotIndex, iMarker, jMarker, comparing, swapped, finalized } = stepForDepth;
+
+            const isCovered = Object.values(activeSnapshots).some(snap =>
+                activeRange[0] >= snap.range[0] && activeRange[1] <= snap.range[1]
+            );
+            if (isCovered) continue;
+
+            const { width } = svg.node().getBoundingClientRect();
+            const nodeRadius = Math.max(Math.min(width / data.length / 3, 30), 5);
+            const xStartPosition = nodeRadius + 10;
+            const effectiveWidth = width - 2 * xStartPosition;
+            const nodeSpacing = data.length > 1 ? effectiveWidth / (data.length - 1) : 0;
+            const yPos = 100 + (depth * 100);
+
+            const activeData = data.filter((d, i) => i >= activeRange[0] && i <= activeRange[1]);
+
+            const nodes = svg.selectAll(`.node-group-depth-${depth}`).data(activeData, d => d.id);
+            const nodeGroups = nodes.enter().append("g").attr("class", `node-group-depth-${depth}`);
+            nodeGroups.append("circle");
+            nodeGroups.append("text");
+
+            const allGroups = nodeGroups.merge(nodes);
+            allGroups.attr("transform", (d, i) => `translate(${xStartPosition + data.indexOf(d) * nodeSpacing}, ${yPos})`);
+
+            allGroups.select("circle")
+                .attr("r", nodeRadius)
+                .attr("fill", (d) => {
+                    const originalIndex = data.indexOf(d);
+                    if (step.finalized && step.finalized.includes(originalIndex)) return config.COLORS.sorted;
+                    if (originalIndex === pivotIndex) return config.COLORS.pivot;
+                    if (swapped && swapped.includes(originalIndex)) return config.COLORS.swapped;
+                    if (comparing && comparing.includes(originalIndex)) return config.COLORS.comparing;
+                    return config.COLORS.default;
+                })
+                .attr("stroke", "#ffffff").attr("stroke-width", 2);
+
+            allGroups.select("text").text(d => d.value)
+                .attr("text-anchor", "middle").attr("dominant-baseline", "middle")
+                .attr("fill", "white").style("font-size", "1rem").style("font-weight", "600");
+
+            if (depth === recursionDepth) {
+                 if (iMarker >= 0) {
+                    svg.append("text").attr("class", "marker").attr("x", xStartPosition + iMarker * nodeSpacing)
+                        .attr("y", yPos + nodeRadius + 25).attr("text-anchor", "middle")
+                        .attr("fill", "#eab308").style("font-size", "1.25rem").style("font-weight", "bold").text("i");
+                }
+                if (jMarker >= 0) {
+                    svg.append("text").attr("class", "marker").attr("x", xStartPosition + jMarker * nodeSpacing)
+                        .attr("y", yPos + nodeRadius + 50).attr("text-anchor", "middle")
+                        .attr("fill", "#f87171").style("font-size", "1.25rem").style("font-weight", "bold").text("j");
+                }
+            }
+        }
+    }
+}
+
+
+// -- General Drawing Functions --
+
+function drawStep(stepIndex) {
+    const step = steps[stepIndex];
+    if (!step) return;
+
+    // DELETE THIS LINE - THIS IS THE BUG
+    // svg.selectAll("*").remove();
+
+    // Highlight the corresponding line of code
+    if (lastHighlightedLine) {
+        lastHighlightedLine.classList.remove("code-highlight");
+    }
+    const lineToHighlight = document.getElementById(`code-line-${step.highlightedCodeLine}`);
+    if (lineToHighlight) {
+        lineToHighlight.classList.add("code-highlight");
+        lastHighlightedLine = lineToHighlight;
+    }
+
+    // Route to the correct drawing function based on the algorithm
+    switch (algorithmId) {
+        case 'bubble-sort':
+            drawBubbleSortStep(step);
+            break;
+        case 'merge-sort':
+            drawMergeSortStep(step, stepIndex, steps);
+            break;
+        case 'quick-sort':
+            drawQuickSortStep(step);
+            break;
+        default:
+            console.error("Unknown or unhandled algorithm ID:", algorithmId);
+    }
+
     statusText.textContent = `Step ${stepIndex + 1} of ${steps.length}`;
 }
 

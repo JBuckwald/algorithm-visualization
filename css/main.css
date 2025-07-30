@@ -1,3 +1,18 @@
 .code-highlight {
     background-color: rgba(59, 130, 246, 0.3); /* A semi-transparent blue */
 }
+
+.algorithm-card {
+    display: block;
+    background-color: #1f2937; /* gray-800 */
+    border-radius: 0.75rem; /* rounded-xl */
+    border: 1px solid #374151; /* gray-700 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    overflow: hidden; /* Ensures content respects the border radius */
+}
+
+.algorithm-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-color: #22d3ee; /* cyan-400 */
+}
