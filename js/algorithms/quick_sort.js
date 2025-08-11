@@ -1,25 +1,25 @@
 // --- Pseudo Code for Code Box ---
 export const quickSortPythonCode = [
-    "def quick_sort(arr, low, high):",                // 0
-    "    if low < high:",                             // 1
-    "        # Partition the array",                 // 2
+    "def quick_sort(arr, low, high):",                 // 0
+    "    if low < high:",                              // 1
+    "        # Partition the array",                   // 2
     "        pivot_index = partition(arr, low, high)", // 3
-    "",                                              // 4
-    "        # Recursively sort the two halves",      // 5
+    "",                                                // 4
+    "        # Recursively sort the two halves",       // 5
     "        quick_sort(arr, low, pivot_index - 1)",   // 6
     "        quick_sort(arr, pivot_index + 1, high)",  // 7
     "",
-    "def partition(arr, low, high):",                 // 9
-    "    pivot = arr[high]",                          // 10
-    "    i = low - 1",                                // 11
-    "",                                              // 12
-    "    for j in range(low, high):",                 // 13
-    "    if arr[j] < pivot:",                     // 14
-    "        i += 1",                             // 15
-    "        arr[i], arr[j] = arr[j], arr[i]",    // 16
-    "",                                              // 17
-    "    arr[i+1], arr[high] = arr[high], arr[i+1]",    // 18
-    "    return i + 1",                              // 19
+    "def partition(arr, low, high):",                  // 9
+    "    pivot = arr[high]",                           // 10
+    "    i = low - 1",                                 // 11
+    "",                                                // 12
+    "    for j in range(low, high):",                  // 13
+    "    if arr[j] < pivot:",                          // 14
+    "        i += 1",                                  // 15
+    "        arr[i], arr[j] = arr[j], arr[i]",         // 16
+    "",                                                // 17
+    "    arr[i+1], arr[high] = arr[high], arr[i+1]",   // 18
+    "    return i + 1",                                // 19
 ];
 
 

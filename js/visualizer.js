@@ -222,7 +222,6 @@ function drawMergeSortSnapshotNodes(snapshot) {
 }
 
 function drawMergeSortStep(step, stepIndex, allSteps) {
-    // --- This logic is moved from your original drawStep function ---
     svg.selectAll(".node-group, .placing-node-group, .snapshot-node-group").remove();
 
     let activeSnapshots = {};
@@ -293,8 +292,6 @@ function drawMergeSortStep(step, stepIndex, allSteps) {
 
 //  -- Bubble Sort Drawing Functions --
 
-// In js/visualizer.js
-
 function drawBubbleSortStep(step) {
     const { data, comparing, swapped, sortedIndex } = step;
     const { width } = svg.node().getBoundingClientRect();
@@ -352,7 +349,6 @@ function drawBubbleSortStep(step) {
 
 
 // -- Quick Sort Drawing Functions --
-
 
 function drawQuickSortStep(step) {
     svg.selectAll("*").remove();
@@ -446,9 +442,6 @@ function drawQuickSortStep(step) {
 function drawStep(stepIndex) {
     const step = steps[stepIndex];
     if (!step) return;
-
-    // DELETE THIS LINE - THIS IS THE BUG
-    // svg.selectAll("*").remove();
 
     // Highlight the corresponding line of code
     if (lastHighlightedLine) {
